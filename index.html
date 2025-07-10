@@ -5,15 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monitor de Frecuencia Cardíaca BLE</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
     button { transition: background-color 0.3s, transform 0.1s; }
     button:active { transform: scale(0.98);}
-    select { color: #fff; background: #23272f; border: 1px solid #444; border-radius: 8px; padding: 0.5em 1.2em; font-size: 1rem; }
-    select:focus { outline: 2px solid #a3e635; }
+    .btn-main { width: 100%; padding: 0.85em 0; border-radius: 1em; font-weight: 600; margin-top: 1em;}
+    .zone-btns-row { display: flex; flex-direction: row; gap: 0.7em; justify-content: center; align-items: center; margin-bottom: 1.1em;}
+    .zone-btn {
+      border-radius: 0.9em;
+      padding: 0.39em 1.05em;
+      font-size: 1.18rem;
+      font-weight: 700;
+      border: 2.5px solid #fff2;
+      background: #23272f;
+      color: #fff;
+      transition: all 0.18s;
+      cursor: pointer;
+      outline: none;
+    }
+    .zone-btn.z1 { border-color: #2563eb;}
+    .zone-btn.z2 { border-color: #059669;}
+    .zone-btn.z3 { border-color: #fbbf24;}
+    .zone-btn.z4 { border-color: #fb923c;}
+    .zone-btn.active.z1 { background: #2563eb; color: #fff;}
+    .zone-btn.active.z2 { background: #059669; color: #fff;}
+    .zone-btn.active.z3 { background: #fbbf24; color: #1a1a1a;}
+    .zone-btn.active.z4 { background: #fb923c; color: #fff;}
+    .zone-desc { display: block; font-size: 1.09rem; text-align: center; margin-bottom: 1.1em; color: #e0e0e0;}
     @keyframes pulsate { 0% { transform: scale(1);} 50% { transform: scale(1.15);} 100% { transform: scale(1);} }
     .heartbeat-animation { animation-name: pulsate; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: ease-in-out;}
     .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em;}
@@ -31,9 +50,9 @@
     .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center;}
     .hr-size-proto { opacity: 0; position: absolute; left: 0; top: 0; pointer-events: none; user-select: none; z-index: 0;}
     #fullscreenHeartRateVisible { font-weight: 800; font-size: inherit; line-height: 1; text-align: center; word-break: break-all; white-space: nowrap; letter-spacing: -0.02em; margin: 0; padding: 0; overflow: hidden; display: block; z-index: 1; user-select: none; transition: color 0.2s;}
-    .hr-blue { color: #3b82f6 !important; }
-    .hr-green { color: #22d3ee !important; }
-    .hr-yellow { color: #fde047 !important; }
+    .hr-blue { color: #2563eb !important; }
+    .hr-green { color: #059669 !important; }
+    .hr-yellow { color: #fbbf24 !important; }
     .hr-orange { color: #fb923c !important; }
     .hr-red { color: #ef4444 !important; }
     .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: color 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none;}
@@ -45,13 +64,10 @@
       .controls-container { width: 45vw; max-width: 450px; min-width: 260px; height: 100vh; justify-content: center; align-items: flex-end; padding-right: 2vw; }
       .hr-container { width: 55vw; min-width: 340px; height: 100vh; justify-content: flex-start; align-items: center; }
     }
-    .zone-goal-txt { display: block; margin-top: 2vh; margin-bottom: 0; font-size: 1.2rem; color: #a3e635; letter-spacing: 0.03em; text-align: center; font-weight: 500; opacity: .96; text-shadow: 0 2px 12px #0009; }
+    .zone-goal-txt { display: block; font-size: 1.17rem; color: #a3e635; letter-spacing: 0.03em; text-align: center; font-weight: 500; opacity: .96; text-shadow: 0 2px 12px #0009; margin-bottom: .4em; }
     .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
-    .descPlan { color: #e0e0e0; font-size: 0.97rem; padding: 0.35em 0.6em 0.2em 0.6em; text-align: center; margin-bottom: 0.1em; min-height: 2.6em;}
     #fullscreenContainer { display: none !important; }
     #fullscreenContainer.active { display: block !important; position: fixed; inset: 0; background: #000; z-index: 50;}
-    #planSection { display: none; }
-    #planSection.active { display: block; }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -59,7 +75,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.4</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.5</div>
       <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -71,18 +87,14 @@
       <p id="bluetoothStatus" class="mt-4 text-sm text-gray-400 h-5">Estado: Desconectado</p>
     </div>
     <div>
-      <button id="connectBluetooth" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+      <button id="connectBluetooth" class="btn-main bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
         Conectar a Sensor
       </button>
     </div>
     <div>
-      <button id="fullscreenBtn" class="w-full mt-3 bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+      <button id="fullscreenBtn" class="btn-main bg-white text-black hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
         Pantalla Completa
       </button>
-    </div>
-    <div id="planSection" class="mt-7">
-      <select id="planSelector" class="mb-1"></select>
-      <span id="planDesc" class="descPlan"></span>
     </div>
     <div id="resultMsg" class="result-msg" style="display:none;"></div>
   </div>
@@ -91,6 +103,8 @@
   <div id="fullscreenContainer">
     <div class="fullscreen-flex-vertical w-full h-full">
       <div class="controls-container">
+        <div class="zone-btns-row" id="zoneBtnsRow"></div>
+        <span id="zoneDesc" class="zone-desc"></span>
         <span class="timer-box" id="sessionTime">00:00:00</span>
         <div class="controls-row mt-2 mb-8">
           <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar">
@@ -111,51 +125,26 @@
         <span id="indicadorFlecha" class="indicador-flecha"></span>
       </div>
     </div>
-    <span id="zoneGoalTxt" class="zone-goal-txt"></span>
   </div>
 
   <script>
-    // --- Variables globales, primero! ---
+    // --- Variables globales
     let heartRateCharacteristic = null;
     let bleDevice = null;
     let lastHR = null;
-    let planActualIdx = 0;
+    let zoneActual = 1;
     let sessionInterval = null;
     let sessionStart = null;
     let sessionElapsed = 0;
     let sessionRunning = false;
     let secondsInZone = 0;
 
-    // --- Planes sugeridos para seleccionar ---
-    const planes = [
-      {
-        nombre: "Caminata ligera o descanso (Z1–Z2)",
-        objetivo: "Estrés mínimo, regeneración",
-        min: 100, max: 120,
-        txt: "Zona objetivo: 100–120 bpm (Recuperación)",
-        desc: "Ideal para recuperación, regeneración, fatiga acumulada, día suave."
-      },
-      {
-        nombre: "Intervalos largos / clásicos (Z2–Z4)",
-        objetivo: "Alta quema calórica, EPOC",
-        min: 130, max: 165,
-        txt: "Zona objetivo: 130–165 bpm (Intervalos/EPOC)",
-        desc: "Para sesiones de alta intensidad, picos, gasto calórico alto, efecto postcombustión (EPOC)."
-      },
-      {
-        nombre: "Base aeróbica continua (Z2)",
-        objetivo: "Máxima oxidación de grasa",
-        min: 115, max: 135,
-        txt: "Zona objetivo: 115–135 bpm (Aeróbico base)",
-        desc: "Sesión de intensidad media, estable y prolongada. Máxima quema de grasa, mínimo desgaste."
-      },
-      {
-        nombre: "Intervalos cortos y suaves (Z2–Z3)",
-        objetivo: "Cardio variado sin fatiga",
-        min: 115, max: 150,
-        txt: "Zona objetivo: 115–150 bpm (Intervalos suaves)",
-        desc: "Intervalos con cambios suaves, mejora agilidad metabólica y variabilidad sin fatiga."
-      }
+    // --- Zonas
+    const zonas = [
+      { id: 1, nombre: "Zona 1", rango: "94–113 bpm", min: 94, max: 113, color: "#2563eb", label: "Z1" },
+      { id: 2, nombre: "Zona 2", rango: "113–132 bpm", min: 113, max: 132, color: "#059669", label: "Z2" },
+      { id: 3, nombre: "Zona 3", rango: "132–150 bpm", min: 132, max: 150, color: "#fbbf24", label: "Z3" },
+      { id: 4, nombre: "Zona 4", rango: "150–169 bpm", min: 150, max: 169, color: "#fb923c", label: "Z4" },
     ];
 
     // ---- Elementos UI ----
@@ -176,39 +165,31 @@
     const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
     const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
     const indicadorFlecha = document.getElementById('indicadorFlecha');
-    // Plan
-    const planSection = document.getElementById('planSection');
-    const planSelector = document.getElementById('planSelector');
-    const planDesc = document.getElementById('planDesc');
-    const zoneGoalTxt = document.getElementById('zoneGoalTxt');
+    // Zona
+    const zoneBtnsRow = document.getElementById('zoneBtnsRow');
+    const zoneDesc = document.getElementById('zoneDesc');
 
-    // --- Funciones de planes ---
-    function updatePlanUI(idx) {
-      planActualIdx = idx;
-      zoneGoalTxt.textContent = planes[idx].txt;
-      planDesc.textContent = planes[idx].desc;
-      updateFullScreenHeartRate(lastHR ?? '--');
-    }
-    function renderPlanSelector() {
-      planSelector.innerHTML = "";
-      planes.forEach((p, i) => {
-        const op = document.createElement('option');
-        op.value = i;
-        op.textContent = p.nombre + " — " + p.objetivo;
-        planSelector.appendChild(op);
+    // --- Renderizar botones de zona
+    function renderZoneBtns() {
+      zoneBtnsRow.innerHTML = "";
+      zonas.forEach((z, i) => {
+        const btn = document.createElement("button");
+        btn.className = `zone-btn z${z.id}` + (zoneActual == z.id ? " active" : "");
+        btn.textContent = z.label;
+        btn.title = z.nombre + " (" + z.rango + ")";
+        btn.onclick = () => {
+          zoneActual = z.id;
+          renderZoneBtns();
+          updateZoneDesc();
+          updateFullScreenHeartRate(lastHR ?? '--');
+        };
+        zoneBtnsRow.appendChild(btn);
       });
-      let def = 0;
-      const today = new Date().getDay();
-      if ([1,5].includes(today)) def = 1;
-      else if ([2,4,6].includes(today)) def = 2;
-      else if (today === 3) def = 3;
-      else def = 0;
-      planSelector.value = def;
-      updatePlanUI(def);
     }
-    planSelector.addEventListener('change', (e) => {
-      updatePlanUI(Number(e.target.value));
-    });
+    function updateZoneDesc() {
+      const z = zonas.find(x => x.id == zoneActual);
+      zoneDesc.innerHTML = `<b>${z.nombre}</b>: <span style="color:${z.color};font-weight:700">${z.rango}</span>`;
+    }
 
     // --- Wake Lock ---
     let wakeLock = null;
@@ -300,11 +281,6 @@
         connectBluetoothBtn.disabled = false;
         requestWakeLock();
         heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
-
-        // --- MOSTRAR SECCIÓN PLAN al conectar ---
-        planSection.classList.add('active');
-        renderPlanSelector();
-
       } catch (error) {
         bluetoothStatusElem.textContent = `Error: ${error.message}`;
         bluetoothStatusElem.classList.add('text-red-600');
@@ -348,23 +324,22 @@
       }
       updateFullScreenHeartRate('--');
       lastHR = null;
-      planSection.classList.remove('active');
     }
 
     // --- Zona objetivo lógica ---
     function isInZone(hr) {
       if (isNaN(hr)) return false;
       hr = Number(hr);
-      const {min, max} = planes[planActualIdx];
-      return hr >= min && hr <= max;
+      const z = zonas.find(x => x.id == zoneActual);
+      return hr >= z.min && hr <= z.max;
     }
 
     function getIndicadorFlecha(hr) {
       if (isNaN(hr) || hr === '--') return 'ok';
       hr = Number(hr);
-      const {min, max} = planes[planActualIdx];
-      if (hr < min - 2) return "arriba";
-      if (hr > max + 2) return "abajo";
+      const z = zonas.find(x => x.id == zoneActual);
+      if (hr < z.min - 2) return "arriba";
+      if (hr > z.max + 2) return "abajo";
       return "ok";
     }
 
@@ -433,6 +408,8 @@
       resultMsg.style.display = "none";
       fullscreenContainer.style.display = "block";
       fullscreenContainer.classList.add('active');
+      renderZoneBtns();
+      updateZoneDesc();
       setTimeout(fitHeartRateFontSize, 250);
       if (fullscreenContainer.requestFullscreen) {
         fullscreenContainer.requestFullscreen();
