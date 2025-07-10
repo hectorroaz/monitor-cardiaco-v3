@@ -50,6 +50,8 @@
     .descPlan { color: #e0e0e0; font-size: 0.97rem; padding: 0.35em 0.6em 0.2em 0.6em; text-align: center; margin-bottom: 0.1em; min-height: 2.6em;}
     #fullscreenContainer { display: none !important; }
     #fullscreenContainer.active { display: block !important; position: fixed; inset: 0; background: #000; z-index: 50;}
+    #planSection { display: none; }
+    #planSection.active { display: block; }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -57,12 +59,8 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.3.3</div>
-      <div class="flex flex-col items-center mb-2">
-        <select id="planSelector"></select>
-        <span id="planDesc" class="descPlan"></span>
-      </div>
-      <p class="text-gray-400 mt-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.4</div>
+      <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
       <div class="flex justify-center items-center mb-4">
@@ -81,6 +79,10 @@
       <button id="fullscreenBtn" class="w-full mt-3 bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
         Pantalla Completa
       </button>
+    </div>
+    <div id="planSection" class="mt-7">
+      <select id="planSelector" class="mb-1"></select>
+      <span id="planDesc" class="descPlan"></span>
     </div>
     <div id="resultMsg" class="result-msg" style="display:none;"></div>
   </div>
@@ -113,6 +115,17 @@
   </div>
 
   <script>
+    // --- Variables globales, primero! ---
+    let heartRateCharacteristic = null;
+    let bleDevice = null;
+    let lastHR = null;
+    let planActualIdx = 0;
+    let sessionInterval = null;
+    let sessionStart = null;
+    let sessionElapsed = 0;
+    let sessionRunning = false;
+    let secondsInZone = 0;
+
     // --- Planes sugeridos para seleccionar ---
     const planes = [
       {
@@ -145,11 +158,31 @@
       }
     ];
 
-    // Lógica de selección
+    // ---- Elementos UI ----
+    const connectBluetoothBtn = document.getElementById('connectBluetooth');
+    const bluetoothStatusElem = document.getElementById('bluetoothStatus');
+    const heartRateDisplayElem = document.getElementById('heartRateDisplay');
+    const heartIconElem = document.getElementById('heartIcon');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const fullscreenContainer = document.getElementById('fullscreenContainer');
+    const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+    const resultMsg = document.getElementById('resultMsg');
+    // Cronómetro
+    const sessionTime = document.getElementById('sessionTime');
+    const sessionPlayBtn = document.getElementById('sessionPlayBtn');
+    const sessionPauseBtn = document.getElementById('sessionPauseBtn');
+    const resetSessionBtn = document.getElementById('resetSessionBtn');
+    // HR Visual
+    const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
+    const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
+    const indicadorFlecha = document.getElementById('indicadorFlecha');
+    // Plan
+    const planSection = document.getElementById('planSection');
     const planSelector = document.getElementById('planSelector');
     const planDesc = document.getElementById('planDesc');
     const zoneGoalTxt = document.getElementById('zoneGoalTxt');
-    let planActualIdx = 0;
+
+    // --- Funciones de planes ---
     function updatePlanUI(idx) {
       planActualIdx = idx;
       zoneGoalTxt.textContent = planes[idx].txt;
@@ -193,35 +226,7 @@
       }
     });
 
-    // UI Elements
-    const connectBluetoothBtn = document.getElementById('connectBluetooth');
-    const bluetoothStatusElem = document.getElementById('bluetoothStatus');
-    const heartRateDisplayElem = document.getElementById('heartRateDisplay');
-    const heartIconElem = document.getElementById('heartIcon');
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const fullscreenContainer = document.getElementById('fullscreenContainer');
-    const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
-    const resultMsg = document.getElementById('resultMsg');
-    // Cronómetro
-    const sessionTime = document.getElementById('sessionTime');
-    const sessionPlayBtn = document.getElementById('sessionPlayBtn');
-    const sessionPauseBtn = document.getElementById('sessionPauseBtn');
-    const resetSessionBtn = document.getElementById('resetSessionBtn');
-    // HR Visual
-    const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
-    const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
-    const indicadorFlecha = document.getElementById('indicadorFlecha');
-
-    // ---- Inicialización selector de planes ----
-    renderPlanSelector();
-
     // ---- Cronómetro ----
-    let sessionInterval = null;
-    let sessionStart = null;
-    let sessionElapsed = 0;
-    let sessionRunning = false;
-    let secondsInZone = 0;
-
     function formatDuration(ms) {
       const total = Math.floor(ms / 1000);
       const h = Math.floor(total / 3600);
@@ -270,10 +275,6 @@
     resetSessionBtn.addEventListener('click', resetSession);
 
     // ---- BLE + BPM logic ----
-    let lastHR = null;
-    let bleDevice = null;
-    let heartRateCharacteristic = null;
-
     connectBluetoothBtn.addEventListener('click', async () => {
       if (!navigator.bluetooth) {
         bluetoothStatusElem.textContent = 'Error: Web Bluetooth no es compatible.';
@@ -299,6 +300,11 @@
         connectBluetoothBtn.disabled = false;
         requestWakeLock();
         heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
+
+        // --- MOSTRAR SECCIÓN PLAN al conectar ---
+        planSection.classList.add('active');
+        renderPlanSelector();
+
       } catch (error) {
         bluetoothStatusElem.textContent = `Error: ${error.message}`;
         bluetoothStatusElem.classList.add('text-red-600');
@@ -310,8 +316,8 @@
       const value = event.target.value;
       const heartRate = parseHeartRate(value);
       heartRateDisplayElem.textContent = heartRate;
-      updateFullScreenHeartRate(heartRate);
       lastHR = heartRate;
+      updateFullScreenHeartRate(heartRate);
       if (heartRate > 0) {
         const animationDuration = 60 / heartRate;
         heartIconElem.style.animationDuration = `${animationDuration.toFixed(2)}s`;
@@ -342,6 +348,7 @@
       }
       updateFullScreenHeartRate('--');
       lastHR = null;
+      planSection.classList.remove('active');
     }
 
     // --- Zona objetivo lógica ---
@@ -457,7 +464,6 @@
     fullscreenBtn.addEventListener('click', enterFullScreen);
     exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
-    // Importante: al salir de fullscreen real
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement &&
           !document.webkitFullscreenElement &&
