@@ -66,8 +66,19 @@
       justify-content: center;
       gap: 0;
     }
-    .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; position: relative; }
-    .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center; }
+    .hr-container {
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .controls-container {
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .hr-size-proto {
       opacity: 0;
       position: absolute;
@@ -76,7 +87,6 @@
       z-index: 0;
     }
     #fullscreenHeartRateVisible {
-      color: #fff;
       font-weight: 800;
       font-size: inherit;
       line-height: 1;
@@ -97,6 +107,20 @@
     .hr-yellow { color: #fde047 !important; }
     .hr-orange { color: #fb923c !important; }
     .hr-red { color: #ef4444 !important; }
+    .semaforo-dot {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      display: inline-block;
+      margin-left: 1.1vw;
+      border: 2.5px solid #333;
+      background: #2d3748;
+      transition: background 0.25s, box-shadow 0.2s;
+      vertical-align: middle;
+    }
+    .sem-green { background: #22c55e !important; box-shadow: 0 0 0 2px #22c55e44;}
+    .sem-yellow { background: #fde047 !important; box-shadow: 0 0 0 2px #fde04766;}
+    .sem-red { background: #ef4444 !important; box-shadow: 0 0 0 2px #ef444477;}
     @media (orientation: landscape) {
       .fullscreen-flex-vertical {
         flex-direction: row;
@@ -117,6 +141,31 @@
         align-items: center;
       }
     }
+    .zone-goal-txt {
+      display: block;
+      margin-top: 2vh;
+      margin-bottom: 0;
+      font-size: 1.2rem;
+      color: #a3e635;
+      letter-spacing: 0.03em;
+      text-align: center;
+      font-weight: 500;
+      opacity: .96;
+      text-shadow: 0 2px 12px #0009;
+    }
+    .result-msg {
+      background: #18181b;
+      color: #fafafa;
+      border-radius: 1.2rem;
+      padding: 1.1em 1.5em;
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin: 0.9em auto 0 auto;
+      max-width: 95vw;
+      box-shadow: 0 2px 16px #0006;
+      border: 1.7px solid #444;
+      text-align: center;
+    }
   </style>
 </head>
 <body class="bg-black text-white flex items-center justify-center min-h-screen p-4">
@@ -124,7 +173,8 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.2</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.3</div>
+      <div id="todaySuggestion" class="text-lime-400 font-semibold text-base mt-1 mb-3"></div>
       <p class="text-gray-400 mt-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -145,6 +195,7 @@
         Pantalla Completa
       </button>
     </div>
+    <div id="resultMsg" class="result-msg" style="display:none;"></div>
   </div>
 
   <!-- Pantalla Completa -->
@@ -170,12 +221,46 @@
       <div class="hr-container">
         <span id="fullscreenHeartRateProto" class="hr-size-proto">188</span>
         <span id="fullscreenHeartRateVisible">--</span>
+        <span id="semaforoDot" class="semaforo-dot"></span>
       </div>
     </div>
+    <span id="zoneGoalTxt" class="zone-goal-txt"></span>
   </div>
 
   <script>
-    // Wake Lock
+    // --- Plan semanal y zonas objetivo por día ---
+    const weekPlan = [
+      { // 0 Domingo
+        tipo: "Caminata ligera o descanso (Z1–Z2)", objetivo: "Estrés mínimo, regeneración",
+        min: 100, max: 120, txt: "Zona objetivo hoy: 100–120 bpm (Recuperación)" 
+      },
+      { // 1 Lunes
+        tipo: "Intervalos clásicos (Z2–Z4)", objetivo: "Alta quema calórica, EPOC",
+        min: 130, max: 165, txt: "Zona objetivo hoy: 130–165 bpm (Intervalos/EPOC)" 
+      },
+      { // 2 Martes
+        tipo: "Base aeróbica continua (Z2)", objetivo: "Máxima oxidación de grasa",
+        min: 115, max: 135, txt: "Zona objetivo hoy: 115–135 bpm (Aeróbico base)" 
+      },
+      { // 3 Miércoles
+        tipo: "Intervalos cortos y suaves (Z2–Z3)", objetivo: "Cardio variado sin fatiga",
+        min: 115, max: 150, txt: "Zona objetivo hoy: 115–150 bpm (Intervalos suaves)" 
+      },
+      { // 4 Jueves
+        tipo: "Base aeróbica continua o descanso (Z2)", objetivo: "Recuperación activa",
+        min: 115, max: 135, txt: "Zona objetivo hoy: 115–135 bpm (Aeróbico base)" 
+      },
+      { // 5 Viernes
+        tipo: "Intervalos clásicos (Z2–Z4)", objetivo: "Alta quema calórica, EPOC",
+        min: 130, max: 165, txt: "Zona objetivo hoy: 130–165 bpm (Intervalos/EPOC)" 
+      },
+      { // 6 Sábado
+        tipo: "Base aeróbica continua larga (Z2)", objetivo: "Grasa, duración",
+        min: 115, max: 135, txt: "Zona objetivo hoy: 115–135 bpm (Aeróbico base)" 
+      },
+    ];
+
+    // --- Wake Lock ---
     let wakeLock = null;
     async function requestWakeLock() {
       try {
@@ -199,6 +284,8 @@
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fullscreenContainer = document.getElementById('fullscreenContainer');
     const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+    const todaySuggestionElem = document.getElementById('todaySuggestion');
+    const resultMsg = document.getElementById('resultMsg');
     // Cronómetro
     const sessionTime = document.getElementById('sessionTime');
     const sessionPlayBtn = document.getElementById('sessionPlayBtn');
@@ -207,15 +294,23 @@
     // HR Visual
     const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
     const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
+    const semaforoDot = document.getElementById('semaforoDot');
+    const zoneGoalTxt = document.getElementById('zoneGoalTxt');
 
-    let heartRateCharacteristic = null;
-    let bleDevice = null;
+    // -------- PLAN SUGERIDO DÍA ---------
+    const today = new Date().getDay();
+    const sugerencia = weekPlan[today];
+    todaySuggestionElem.textContent = `Hoy: ${sugerencia.tipo} — ${sugerencia.objetivo}`;
+
+    // ----- Inicializar zona objetivo -----
+    zoneGoalTxt.textContent = sugerencia.txt;
 
     // ---- Cronómetro ----
     let sessionInterval = null;
     let sessionStart = null;
     let sessionElapsed = 0;
     let sessionRunning = false;
+    let secondsInZone = 0;
 
     function formatDuration(ms) {
       const total = Math.floor(ms / 1000);
@@ -245,20 +340,31 @@
     function resetSession() {
       sessionRunning = false;
       sessionElapsed = 0;
+      secondsInZone = 0;
       clearInterval(sessionInterval);
       sessionTime.textContent = "00:00:00";
     }
     function updateSessionTime() {
       if (sessionRunning) {
         sessionElapsed = Date.now() - sessionStart;
+        sessionTime.textContent = formatDuration(sessionElapsed);
+        // Sumar segundo si el HR está en zona objetivo
+        if (lastHR && isInZone(lastHR)) {
+          secondsInZone++;
+        }
+      } else {
+        sessionTime.textContent = formatDuration(sessionElapsed);
       }
-      sessionTime.textContent = formatDuration(sessionElapsed);
     }
     sessionPlayBtn.addEventListener('click', startSession);
     sessionPauseBtn.addEventListener('click', pauseSession);
     resetSessionBtn.addEventListener('click', resetSession);
 
-    // BLE + BPM logic
+    // ---- BLE + BPM logic ----
+    let heartRateCharacteristic = null;
+    let bleDevice = null;
+    let lastHR = null;
+
     connectBluetoothBtn.addEventListener('click', async () => {
       if (!navigator.bluetooth) {
         bluetoothStatusElem.textContent = 'Error: Web Bluetooth no es compatible.';
@@ -295,6 +401,7 @@
       const heartRate = parseHeartRate(value);
       heartRateDisplayElem.textContent = heartRate;
       updateFullScreenHeartRate(heartRate);
+      lastHR = heartRate;
       if (heartRate > 0) {
         const animationDuration = 60 / heartRate;
         heartIconElem.style.animationDuration = `${animationDuration.toFixed(2)}s`;
@@ -324,26 +431,17 @@
         heartRateCharacteristic = null;
       }
       updateFullScreenHeartRate('--');
+      lastHR = null;
     }
 
-    // --- Pantalla Completa ---
-    function enterFullScreen() {
-      fullscreenContainer.classList.remove('hidden');
-      if (document.documentElement.requestFullscreen) {
-        fullscreenContainer.requestFullscreen();
-      }
-      setTimeout(fitHeartRateFontSize, 200);
+    // --- Zona objetivo lógica ---
+    function isInZone(hr) {
+      if (isNaN(hr)) return false;
+      hr = Number(hr);
+      return hr >= sugerencia.min && hr <= sugerencia.max;
     }
-    function exitFullScreen() {
-      fullscreenContainer.classList.add('hidden');
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      }
-    }
-    fullscreenBtn.addEventListener('click', enterFullScreen);
-    exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
-    // HR Color zones
+    // --- Pantalla Completa y Semáforo ----
     function getZoneClass(hr) {
       if (isNaN(hr) || hr === '--') return '';
       hr = Number(hr);
@@ -353,6 +451,15 @@
       if (hr >= 150 && hr < 170) return 'hr-orange';
       if (hr >= 170) return 'hr-red';
       return '';
+    }
+
+    function getSemaforoClass(hr) {
+      if (isNaN(hr) || hr === '--') return '';
+      hr = Number(hr);
+      if (isInZone(hr)) return 'sem-green';
+      // tolerancia ±8 bpm para amarillo
+      if (hr >= sugerencia.min - 8 && hr <= sugerencia.max + 8) return 'sem-yellow';
+      return 'sem-red';
     }
 
     // Truco: ajustar SOLO la fuente del "prototipo"
@@ -380,11 +487,15 @@
 
     function updateFullScreenHeartRate(bpm) {
       fullscreenHeartRateVisible.textContent = bpm;
-      // Quitar todas las clases de zona previas
+      // Quitar todas las clases previas
       fullscreenHeartRateVisible.classList.remove('hr-blue','hr-green','hr-yellow','hr-orange','hr-red');
-      // Poner clase según zona
+      semaforoDot.classList.remove('sem-green','sem-yellow','sem-red');
+      // Color HR
       const zone = getZoneClass(bpm);
       if(zone) fullscreenHeartRateVisible.classList.add(zone);
+      // Color semáforo
+      const sem = getSemaforoClass(bpm);
+      if (sem) semaforoDot.classList.add(sem);
       if (!fullscreenContainer.classList.contains('hidden')) {
         fitHeartRateFontSize();
       }
@@ -399,7 +510,19 @@
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
         fullscreenContainer.classList.add('hidden');
+        // Mostrar resumen simple
+        if (sessionElapsed > 0) {
+          resultMsg.style.display = "block";
+          const tiempoTotal = formatDuration(sessionElapsed);
+          const tiempoEnZona = formatDuration(secondsInZone * 1000);
+          let adherencia = "Mejorable";
+          const prop = secondsInZone / Math.max(1,Math.floor(sessionElapsed/1000));
+          if (prop > 0.75) adherencia = "¡Excelente adherencia!";
+          else if (prop > 0.5) adherencia = "Bien, puedes mejorar";
+          resultMsg.innerHTML = `Duración: <b>${tiempoTotal}</b> &nbsp; | &nbsp; Tiempo en zona: <b>${tiempoEnZona}</b><br>${adherencia}`;
+        }
       } else {
+        resultMsg.style.display = "none";
         setTimeout(fitHeartRateFontSize, 100);
       }
     });
