@@ -9,8 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    button { transition: background-color 0.3s ease, transform 0.1s ease; }
+    html, body { height: 100%; width: 100%; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #000; color: #fff; min-height: 100vh; }
+    button { transition: background-color 0.3s, transform 0.1s; }
     button:active { transform: scale(0.98); }
     select { color: #fff; background: #23272f; border: 1px solid #444; border-radius: 8px; padding: 0.5em 1.2em; font-size: 1rem; }
     select:focus { outline: 2px solid #a3e635; }
@@ -25,33 +26,9 @@
       animation-iteration-count: infinite;
       animation-timing-function: ease-in-out;
     }
-    #fullscreenContainer { background: #000 !important; padding:0!important; margin:0!important; }
-    .timer-box {
-      font-family: 'Inter', monospace;
-      font-size: 2.7rem;
-      font-weight: 700;
-      color: #06b6d4;
-      margin-bottom: 1.2em;
-      letter-spacing: 0.04em;
-    }
-    .controls-row {
-      display: flex;
-      flex-direction: row;
-      gap: 1.4rem;
-      justify-content: center;
-      align-items: center;
-    }
-    .circle-btn {
-      width: 3.3rem;
-      height: 3.3rem;
-      border-radius: 9999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      outline: none;
-      cursor: pointer;
-    }
+    .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em;}
+    .controls-row { display: flex; flex-direction: row; gap: 1.4rem; justify-content: center; align-items: center;}
+    .circle-btn { width: 3.3rem; height: 3.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: none; outline: none; cursor: pointer;}
     .circle-btn svg { width: 2rem; height: 2rem; }
     .btn-play { background: #16a34a; }
     .btn-pause { background: #dc2626; }
@@ -59,135 +36,38 @@
     .btn-play:hover { background: #15803d; }
     .btn-pause:hover { background: #991b1b; }
     .btn-reset:hover { background: #334155; }
-    .fullscreen-flex-vertical {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-    }
-    .hr-container {
-      width: 100vw;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-    }
-    .controls-container {
-      width: 100vw;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .hr-size-proto {
-      opacity: 0;
-      position: absolute;
-      left: 0; top: 0; pointer-events: none;
-      user-select: none;
-      z-index: 0;
-    }
-    #fullscreenHeartRateVisible {
-      font-weight: 800;
-      font-size: inherit;
-      line-height: 1;
-      text-align: center;
-      word-break: break-all;
-      white-space: nowrap;
-      letter-spacing: -0.02em;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      display: block;
-      z-index: 1;
-      user-select: none;
-      transition: color 0.2s;
-    }
+    .fullscreen-flex-vertical { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;}
+    .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; position: relative;}
+    .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center;}
+    .hr-size-proto { opacity: 0; position: absolute; left: 0; top: 0; pointer-events: none; user-select: none; z-index: 0;}
+    #fullscreenHeartRateVisible { font-weight: 800; font-size: inherit; line-height: 1; text-align: center; word-break: break-all; white-space: nowrap; letter-spacing: -0.02em; margin: 0; padding: 0; overflow: hidden; display: block; z-index: 1; user-select: none; transition: color 0.2s;}
     .hr-blue { color: #3b82f6 !important; }
     .hr-green { color: #22d3ee !important; }
     .hr-yellow { color: #fde047 !important; }
     .hr-orange { color: #fb923c !important; }
     .hr-red { color: #ef4444 !important; }
-    .indicador-flecha {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 2vw;
-      font-size: 3rem;
-      font-weight: 700;
-      transition: color 0.18s;
-      color: #f59e42;
-      text-shadow: 0 2px 9px #0007;
-      opacity: 1;
-      min-width: 2.7rem;
-      height: 2.7rem;
-      user-select: none;
-    }
-    .indicador-flecha.arriba { color: #f87171; } /* Rojo suave */
-    .indicador-flecha.abajo { color: #60a5fa; }  /* Azul claro */
-    .indicador-flecha.ok { opacity: 0; }         /* Invisible si ok */
+    .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: color 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none;}
+    .indicador-flecha.arriba { color: #f87171; }
+    .indicador-flecha.abajo { color: #60a5fa; }
+    .indicador-flecha.ok { opacity: 0; }
     @media (orientation: landscape) {
-      .fullscreen-flex-vertical {
-        flex-direction: row;
-        align-items: stretch;
-        gap: 0;
-      }
-      .controls-container {
-        width: 45vw; max-width: 450px; min-width: 260px;
-        height: 100vh;
-        justify-content: center;
-        align-items: flex-end;
-        padding-right: 2vw;
-      }
-      .hr-container {
-        width: 55vw; min-width: 340px;
-        height: 100vh;
-        justify-content: flex-start;
-        align-items: center;
-      }
+      .fullscreen-flex-vertical { flex-direction: row; align-items: stretch; gap: 0; }
+      .controls-container { width: 45vw; max-width: 450px; min-width: 260px; height: 100vh; justify-content: center; align-items: flex-end; padding-right: 2vw; }
+      .hr-container { width: 55vw; min-width: 340px; height: 100vh; justify-content: flex-start; align-items: center; }
     }
-    .zone-goal-txt {
-      display: block;
-      margin-top: 2vh;
-      margin-bottom: 0;
-      font-size: 1.2rem;
-      color: #a3e635;
-      letter-spacing: 0.03em;
-      text-align: center;
-      font-weight: 500;
-      opacity: .96;
-      text-shadow: 0 2px 12px #0009;
-    }
-    .result-msg {
-      background: #18181b;
-      color: #fafafa;
-      border-radius: 1.2rem;
-      padding: 1.1em 1.5em;
-      font-size: 1.25rem;
-      font-weight: 500;
-      margin: 0.9em auto 0 auto;
-      max-width: 95vw;
-      box-shadow: 0 2px 16px #0006;
-      border: 1.7px solid #444;
-      text-align: center;
-    }
-    .descPlan {
-      color: #e0e0e0;
-      font-size: 0.97rem;
-      padding: 0.35em 0.6em 0.2em 0.6em;
-      text-align: center;
-      margin-bottom: 0.1em;
-      min-height: 2.6em;
-    }
+    .zone-goal-txt { display: block; margin-top: 2vh; margin-bottom: 0; font-size: 1.2rem; color: #a3e635; letter-spacing: 0.03em; text-align: center; font-weight: 500; opacity: .96; text-shadow: 0 2px 12px #0009; }
+    .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
+    .descPlan { color: #e0e0e0; font-size: 0.97rem; padding: 0.35em 0.6em 0.2em 0.6em; text-align: center; margin-bottom: 0.1em; min-height: 2.6em;}
+    #fullscreenContainer { display: none; }
+    #fullscreenContainer.active { display: block; position: fixed; inset: 0; background: #000; z-index: 50;}
   </style>
 </head>
-<body class="bg-black text-white flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-  <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center">
+  <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.3.2</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.3.3</div>
       <div class="flex flex-col items-center mb-2">
         <select id="planSelector"></select>
         <span id="planDesc" class="descPlan"></span>
@@ -216,7 +96,7 @@
   </div>
 
   <!-- Pantalla Completa -->
-  <div id="fullscreenContainer" class="hidden fixed inset-0 bg-black z-50">
+  <div id="fullscreenContainer">
     <div class="fullscreen-flex-vertical w-full h-full">
       <!-- Controles y contador -->
       <div class="controls-container">
@@ -288,7 +168,6 @@
       planDesc.textContent = planes[idx].desc;
       updateFullScreenHeartRate(lastHR ?? '--');
     }
-    // Rellenar el selector
     function renderPlanSelector() {
       planSelector.innerHTML = "";
       planes.forEach((p, i) => {
@@ -297,7 +176,6 @@
         op.textContent = p.nombre + " — " + p.objetivo;
         planSelector.appendChild(op);
       });
-      // Selección por defecto según día
       let def = 0;
       const today = new Date().getDay();
       if ([1,5].includes(today)) def = 1;
@@ -392,7 +270,6 @@
       if (sessionRunning) {
         sessionElapsed = Date.now() - sessionStart;
         sessionTime.textContent = formatDuration(sessionElapsed);
-        // Sumar segundo si el HR está en zona objetivo
         if (lastHR && isInZone(lastHR)) {
           secondsInZone++;
         }
@@ -486,7 +363,6 @@
       return hr >= min && hr <= max;
     }
 
-    // Flecha lógica: retorna "arriba", "abajo" o "ok"
     function getIndicadorFlecha(hr) {
       if (isNaN(hr) || hr === '--') return 'ok';
       hr = Number(hr);
@@ -496,7 +372,6 @@
       return "ok";
     }
 
-    // Colores por zonas clásicas (visuales)
     function getZoneClass(hr) {
       if (isNaN(hr) || hr === '--') return '';
       hr = Number(hr);
@@ -508,7 +383,6 @@
       return '';
     }
 
-    // Ajusta fuente gigante y actualiza flecha
     function fitHeartRateFontSize() {
       const proto = fullscreenHeartRateProto;
       if (!proto) return;
@@ -534,39 +408,36 @@
     function updateFullScreenHeartRate(bpm) {
       fullscreenHeartRateVisible.textContent = bpm;
       fullscreenHeartRateVisible.classList.remove('hr-blue','hr-green','hr-yellow','hr-orange','hr-red');
-      // Color HR
       const zone = getZoneClass(bpm);
       if(zone) fullscreenHeartRateVisible.classList.add(zone);
-
-      // Indicador flecha
       indicadorFlecha.classList.remove('arriba', 'abajo', 'ok');
       const arrowType = getIndicadorFlecha(bpm);
       if (arrowType === 'arriba') {
         indicadorFlecha.classList.add('arriba');
-        indicadorFlecha.innerHTML = "&#8593;"; // Flecha arriba ↑
+        indicadorFlecha.innerHTML = "&#8593;";
       } else if (arrowType === 'abajo') {
         indicadorFlecha.classList.add('abajo');
-        indicadorFlecha.innerHTML = "&#8595;"; // Flecha abajo ↓
+        indicadorFlecha.innerHTML = "&#8595;";
       } else {
         indicadorFlecha.classList.add('ok');
         indicadorFlecha.innerHTML = "";
       }
-
-      if (!fullscreenContainer.classList.contains('hidden')) {
+      if (fullscreenContainer.classList.contains('active')) {
         fitHeartRateFontSize();
       }
     }
 
     window.addEventListener('resize', () => {
-      if (!fullscreenContainer.classList.contains('hidden')) {
+      if (fullscreenContainer.classList.contains('active')) {
         fitHeartRateFontSize();
       }
     });
 
-    // Manejo correcto de pantalla completa
     function enterFullScreen() {
       resultMsg.style.display = "none";
-      fullscreenContainer.classList.remove('hidden');
+      fullscreenContainer.classList.add('active');
+      setTimeout(fitHeartRateFontSize, 250);
+      // Pantalla completa real (cuando el navegador lo permita)
       if (fullscreenContainer.requestFullscreen) {
         fullscreenContainer.requestFullscreen();
       } else if (fullscreenContainer.webkitRequestFullscreen) {
@@ -574,7 +445,6 @@
       } else if (fullscreenContainer.msRequestFullscreen) {
         fullscreenContainer.msRequestFullscreen();
       }
-      setTimeout(fitHeartRateFontSize, 200);
     }
     function exitFullScreen() {
       if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
@@ -582,7 +452,7 @@
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         else if (document.msExitFullscreen) document.msExitFullscreen();
       }
-      fullscreenContainer.classList.add('hidden');
+      fullscreenContainer.classList.remove('active');
       if (sessionElapsed > 0) {
         resultMsg.style.display = "block";
         const tiempoTotal = formatDuration(sessionElapsed);
@@ -597,11 +467,12 @@
     fullscreenBtn.addEventListener('click', enterFullScreen);
     exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
+    // Importante: al salir de fullscreen real
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement &&
           !document.webkitFullscreenElement &&
           !document.msFullscreenElement) {
-        fullscreenContainer.classList.add('hidden');
+        fullscreenContainer.classList.remove('active');
         if (sessionElapsed > 0) {
           resultMsg.style.display = "block";
           const tiempoTotal = formatDuration(sessionElapsed);
@@ -619,7 +490,6 @@
       }
     });
 
-    // Inicializa valores por defecto
     updateFullScreenHeartRate('--');
     sessionTime.textContent = "00:00:00";
   </script>
