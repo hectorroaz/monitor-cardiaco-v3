@@ -9,23 +9,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    html, body { height: 100%; width: 100%; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #000; color: #fff; min-height: 100vh; }
+    body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
     button { transition: background-color 0.3s, transform 0.1s; }
-    button:active { transform: scale(0.98); }
+    button:active { transform: scale(0.98);}
     select { color: #fff; background: #23272f; border: 1px solid #444; border-radius: 8px; padding: 0.5em 1.2em; font-size: 1rem; }
     select:focus { outline: 2px solid #a3e635; }
-    @keyframes pulsate {
-      0% { transform: scale(1);}
-      50% { transform: scale(1.15);}
-      100% { transform: scale(1);}
-    }
-    .heartbeat-animation {
-      animation-name: pulsate;
-      animation-duration: 1s;
-      animation-iteration-count: infinite;
-      animation-timing-function: ease-in-out;
-    }
+    @keyframes pulsate { 0% { transform: scale(1);} 50% { transform: scale(1.15);} 100% { transform: scale(1);} }
+    .heartbeat-animation { animation-name: pulsate; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: ease-in-out;}
     .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em;}
     .controls-row { display: flex; flex-direction: row; gap: 1.4rem; justify-content: center; align-items: center;}
     .circle-btn { width: 3.3rem; height: 3.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: none; outline: none; cursor: pointer;}
@@ -58,8 +48,8 @@
     .zone-goal-txt { display: block; margin-top: 2vh; margin-bottom: 0; font-size: 1.2rem; color: #a3e635; letter-spacing: 0.03em; text-align: center; font-weight: 500; opacity: .96; text-shadow: 0 2px 12px #0009; }
     .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
     .descPlan { color: #e0e0e0; font-size: 0.97rem; padding: 0.35em 0.6em 0.2em 0.6em; text-align: center; margin-bottom: 0.1em; min-height: 2.6em;}
-    #fullscreenContainer { display: none; }
-    #fullscreenContainer.active { display: block; position: fixed; inset: 0; background: #000; z-index: 50;}
+    #fullscreenContainer { display: none !important; }
+    #fullscreenContainer.active { display: block !important; position: fixed; inset: 0; background: #000; z-index: 50;}
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -98,7 +88,6 @@
   <!-- Pantalla Completa -->
   <div id="fullscreenContainer">
     <div class="fullscreen-flex-vertical w-full h-full">
-      <!-- Controles y contador -->
       <div class="controls-container">
         <span class="timer-box" id="sessionTime">00:00:00</span>
         <div class="controls-row mt-2 mb-8">
@@ -114,7 +103,6 @@
         </div>
         <button id="exitFullscreenBtn" class="mt-8 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
       </div>
-      <!-- HR gigante fijo -->
       <div class="hr-container">
         <span id="fullscreenHeartRateProto" class="hr-size-proto">188</span>
         <span id="fullscreenHeartRateVisible">--</span>
@@ -308,6 +296,7 @@
         await heartRateCharacteristic.startNotifications();
         bluetoothStatusElem.textContent = '¡Conectado! Escuchando latidos...';
         bluetoothStatusElem.classList.add('text-green-600');
+        connectBluetoothBtn.disabled = false;
         requestWakeLock();
         heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
       } catch (error) {
@@ -435,9 +424,9 @@
 
     function enterFullScreen() {
       resultMsg.style.display = "none";
+      fullscreenContainer.style.display = "block";
       fullscreenContainer.classList.add('active');
       setTimeout(fitHeartRateFontSize, 250);
-      // Pantalla completa real (cuando el navegador lo permita)
       if (fullscreenContainer.requestFullscreen) {
         fullscreenContainer.requestFullscreen();
       } else if (fullscreenContainer.webkitRequestFullscreen) {
@@ -453,6 +442,7 @@
         else if (document.msExitFullscreen) document.msExitFullscreen();
       }
       fullscreenContainer.classList.remove('active');
+      fullscreenContainer.style.display = "none";
       if (sessionElapsed > 0) {
         resultMsg.style.display = "block";
         const tiempoTotal = formatDuration(sessionElapsed);
@@ -473,6 +463,7 @@
           !document.webkitFullscreenElement &&
           !document.msFullscreenElement) {
         fullscreenContainer.classList.remove('active');
+        fullscreenContainer.style.display = "none";
         if (sessionElapsed > 0) {
           resultMsg.style.display = "block";
           const tiempoTotal = formatDuration(sessionElapsed);
