@@ -270,9 +270,9 @@
     resetSessionBtn.addEventListener('click', resetSession);
 
     // ---- BLE + BPM logic ----
-    let heartRateCharacteristic = null;
-    let bleDevice = null;
     let lastHR = null;
+    let bleDevice = null;
+    let heartRateCharacteristic = null;
 
     connectBluetoothBtn.addEventListener('click', async () => {
       if (!navigator.bluetooth) {
