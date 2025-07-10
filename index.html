@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Frecuencia Cardíaca BLE v3.6</title>
+  <title>Monitor de Frecuencia Cardíaca BLE v3.6 (Mod)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -21,7 +21,7 @@
     .zone-desc { display: block; font-size: 1.09rem; text-align: center; margin-bottom: 1.1em; color: #e0e0e0; }
     @keyframes pulsate { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
     .heartbeat-animation { animation-name: pulsate; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
-    .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 0.5em; letter-spacing: 0.04em; }
+    .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em; }
     .controls-row { display: flex; flex-direction: row; gap: 1.4rem; justify-content: center; align-items: center; }
     .circle-btn { width: 3.3rem; height: 3.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: none; outline: none; cursor: pointer; position: relative; }
     .circle-btn svg { width: 2rem; height: 2rem; }
@@ -39,19 +39,13 @@
     .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
     #fullscreenContainer { display: none !important; } #fullscreenContainer.active { display: flex !important; position: fixed; inset: 0; background: #000; z-index: 50; }
     
-    /* NUEVO: Estilos para el Modal de Zonas y la barra de progreso */
+    /* Estilos para el Modal de Zonas */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
     .modal-overlay.active { display: flex; }
     .modal-content { background: #1e1e1e; padding: 2rem; border-radius: 1.5rem; border: 1px solid #444; width: 90vw; max-width: 500px; }
     .modal-content h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
     .modal-input { background: #333; border: 1px solid #555; color: #fff; border-radius: 0.5em; padding: 0.5em 0.8em; width: 100%; }
     .modal-input:focus { outline: none; border-color: var(--c-z1); }
-    #zoneProgressBarContainer { width: 80%; max-width: 400px; height: 1.2rem; background: #333; border-radius: 1rem; overflow: hidden; margin-top: 0.5rem; margin-bottom: 1.2rem; border: 2px solid #555; }
-    #zoneProgressBar { width: 0%; height: 100%; background: #a3e635; transition: width 0.5s ease-out; }
-    #toggleAudioBtn { background: #4b5563; }
-    #toggleAudioBtn.active { background: #84cc16; }
-    #toggleAudioBtn svg.on { display: none; } #toggleAudioBtn.active svg.on { display: block; }
-    #toggleAudioBtn svg.off { display: block; } #toggleAudioBtn.active svg.off { display: none; }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -86,15 +80,10 @@
         <div class="zone-btns-row" id="zoneBtnsRow"></div>
         <span id="zoneDesc" class="zone-desc"></span>
         <time id="sessionTime" class="timer-box">00:00:00</time>
-        <div id="zoneProgressBarContainer"><div id="zoneProgressBar"></div></div>
         <div class="controls-row mt-2 mb-8">
           <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar" aria-label="Iniciar Sesión"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="10,8 16,12 10,16" fill="#fff"/></svg></button>
           <button id="sessionPauseBtn" class="circle-btn btn-pause" title="Pausar" aria-label="Pausar Sesión"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="8" width="2" height="8" rx="1" fill="#fff"/><rect x="13" y="8" width="2" height="8" rx="1" fill="#fff"/></svg></button>
           <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar" aria-label="Reiniciar Sesión"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2" fill="none"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="6"/></svg></button>
-          <button id="toggleAudioBtn" class="circle-btn" title="Activar/Desactivar Audio" aria-label="Alertas de Audio">
-            <svg class="on" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-            <svg class="off" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l4-4m0 4l-4-4"></path></svg>
-          </button>
         </div>
         <button id="exitFullscreenBtn" class="mt-8 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
       </div>
@@ -127,9 +116,6 @@
     let heartRateCharacteristic = null, bleDevice = null, wakeLock = null;
     let lastHR = null, zoneActual = 1;
     let sessionInterval = null, sessionStart = null, sessionElapsed = 0, sessionRunning = false, secondsInZone = 0;
-    // NUEVO: Variables para nuevas funcionalidades
-    let audioAlertsEnabled = false;
-    let lastZoneStatus = 'ok'; // 'ok', 'arriba', 'abajo'
     let hrHistory = [], maxHRInSession = 0, hrSum = 0;
     
     let ZONAS = [
@@ -159,7 +145,6 @@
         arrow: document.getElementById('indicadorFlecha'),
         zoneBtnsRow: document.getElementById('zoneBtnsRow'),
         zoneDesc: document.getElementById('zoneDesc'),
-        // NUEVO: Elementos para nuevas funcionalidades
         editZonesBtn: document.getElementById('editZonesBtn'),
         zoneEditorModal: document.getElementById('zoneEditorModal'),
         closeModalBtn: document.getElementById('closeModalBtn'),
@@ -167,13 +152,10 @@
         calculateZonesBtn: document.getElementById('calculateZonesBtn'),
         userAgeInput: document.getElementById('userAge'),
         zoneInputsContainer: document.getElementById('zoneInputsContainer'),
-        progressBar: document.getElementById('zoneProgressBar'),
-        toggleAudioBtn: document.getElementById('toggleAudioBtn'),
     };
     
     // ---- Lógica de la aplicación ----
 
-    // NUEVO: Funciones para gestionar zonas personalizadas y el modal
     function openZoneEditor() {
         let inputsHtml = '';
         ZONAS.forEach(z => {
@@ -250,14 +232,6 @@
         updateZoneDesc();
     }
     
-    // NUEVO: Función para alertas de audio
-    function speak(text) {
-        if (!audioAlertsEnabled || !window.speechSynthesis) return;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'es-ES';
-        window.speechSynthesis.speak(utterance);
-    }
-    
     function formatDuration(ms) {
       const totalSeconds = Math.floor(ms / 1000);
       const h = Math.floor(totalSeconds / 3600);
@@ -286,7 +260,6 @@
         pauseSession();
         sessionElapsed = 0;
         secondsInZone = 0;
-        // NUEVO: Resetear métricas de sesión
         hrHistory = [];
         maxHRInSession = 0;
         hrSum = 0;
@@ -300,11 +273,6 @@
         if (sessionRunning && lastHR && isInZone(lastHR)) {
             secondsInZone++;
         }
-        
-        // NUEVO: Actualizar barra de progreso
-        const totalSeconds = currentElapsed / 1000;
-        const progressPercentage = totalSeconds > 0 ? (secondsInZone / totalSeconds) * 100 : 0;
-        ui.progressBar.style.width = `${progressPercentage}%`;
     }
 
     async function connectToBluetooth() {
@@ -345,7 +313,6 @@
         lastHR = heartRate;
         ui.hrDisplay.textContent = heartRate;
         
-        // NUEVO: Recolectar datos para estadísticas
         if (sessionRunning && heartRate > 0) {
             hrHistory.push(heartRate);
             hrSum += heartRate;
@@ -388,7 +355,7 @@
       if (isNaN(hr) || hr === '--') return 'ok';
       const z = ZONAS.find(x => x.id == zoneActual);
       if (!z) return 'ok';
-      if (hr < z.min) return "arriba"; // Simplificado para la alerta de audio
+      if (hr < z.min) return "arriba";
       if (hr > z.max) return "abajo";
       return "ok";
     }
@@ -425,14 +392,11 @@
       
       if (arrowType === 'arriba') {
           ui.arrow.innerHTML = "&#8593;";
-          if(lastZoneStatus !== 'arriba' && sessionRunning) speak("Sube el ritmo");
       } else if (arrowType === 'abajo') {
           ui.arrow.innerHTML = "&#8595;";
-          if(lastZoneStatus !== 'abajo' && sessionRunning) speak("Baja el ritmo");
       } else {
           ui.arrow.textContent = "";
       }
-      lastZoneStatus = arrowType;
 
       if (ui.fullscreenContainer.classList.contains('active')) {
         fitHeartRateFontSize();
@@ -478,15 +442,10 @@
         ui.fullscreenBtn.addEventListener('click', enterFullScreen);
         ui.exitFullscreenBtn.addEventListener('click', exitFullScreen);
         
-        // NUEVO: Listeners para nuevas funcionalidades
         ui.editZonesBtn.addEventListener('click', openZoneEditor);
         ui.closeModalBtn.addEventListener('click', closeZoneEditor);
         ui.saveZonesBtn.addEventListener('click', saveZones);
         ui.calculateZonesBtn.addEventListener('click', calculateZonesByAge);
-        ui.toggleAudioBtn.addEventListener('click', () => {
-            audioAlertsEnabled = !audioAlertsEnabled;
-            ui.toggleAudioBtn.classList.toggle('active', audioAlertsEnabled);
-        });
 
         ui.zoneBtnsRow.addEventListener('click', (event) => {
             const clickedBtn = event.target.closest('.zone-btn');
