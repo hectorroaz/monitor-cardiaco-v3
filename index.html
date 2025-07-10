@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Frecuencia Cardíaca BLE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        button { transition: background-color 0.3s ease, transform 0.1s ease; }
+        button:active { transform: scale(0.98); }
+        @keyframes pulsate {
+            0% { transform: scale(1);}
+            50% { transform: scale(1.15);}
+            100% { transform: scale(1);}
+        }
+        .heartbeat-animation {
+            animation-name: pulsate;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+        }
+        #fullscreenContainer { background: #000 !important; padding:0!important; margin:0!important; }
+
+        .timer-box {
+            font-family: 'Inter', monospace;
+            font-size: 2.7rem;
+            font-weight: 700;
+            color: #06b6d4;
+            margin-bottom: 1.2em;
+            letter-spacing: 0.04em;
+        }
+        .controls-row {
+            display: flex;
+            flex-direction: row;
+            gap: 1.4rem;
+            justify-content: center;
+            align-items: center;
+        }
+        .circle-btn {
+            width: 3.3rem;
+            height: 3.3rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            outline: none;
+            cursor: pointer;
+        }
+        .circle-btn svg { width: 2rem; height: 2rem; }
+        .btn-play { background: #16a34a; }
+        .btn-pause { background: #dc2626; }
+        .btn-reset { background: #6b7280; }
+        .btn-play:hover { background: #15803d; }
+        .btn-pause:hover { background: #991b1b; }
+        .btn-reset:hover { background: #334155; }
+
+        .fullscreen-flex-vertical {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+        .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; }
+        .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center; }
+        #fullscreenHeartRate {
+            text-align: center;
+            word-break: break-all;
+            white-space: nowrap;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: block;
+            color: #fff;
+            font-weight: 800;
+            font-size: 17vw;
+            transition: font-size 0.1s;
+        }
+        @media (orientation: landscape) {
+            .fullscreen-flex-vertical {
+                flex-direction: row;
+                align-items: stretch;
+                gap: 0;
+            }
+            .controls-container {
+                width: 45vw; max-width: 450px; min-width: 260px;
+                height: 100vh;
+                justify-content: center;
+                align-items: flex-end;
+                padding-right: 2vw;
+            }
+            .hr-container {
+                width: 55vw; min-width: 340px;
+                height: 100vh;
+                justify-content: flex-start;
+                align-items: center;
+            }
+            #fullscreenHeartRate {
+                font-size: 17vw;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body class="bg-black text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center">
+        <header>
+            <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
+            <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.0</div>
+            <p class="text-gray-400 mt-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
+        </header>
+        <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
+            <div class="flex justify-center items-center mb-4">
+                <svg id="heartIcon" class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+            </div>
+            <div id="heartRateDisplay" class="text-7xl font-bold text-white tracking-tight">--</div>
+            <div class="text-lg text-gray-400">BPM</div>
+            <p id="bluetoothStatus" class="mt-4 text-sm text-gray-400 h-5">Estado: Desconectado</p>
+        </div>
+        <div>
+            <button id="connectBluetooth" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+                Conectar a Sensor
+            </button>
+        </div>
+        <div>
+            <button id="fullscreenBtn" class="w-full mt-3 bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+                Pantalla Completa
+            </button>
+        </div>
+    </div>
+
+    <!-- Pantalla Completa -->
+    <div id="fullscreenContainer" class="hidden fixed inset-0 bg-black z-50">
+        <div class="fullscreen-flex-vertical w-full h-full">
+            <!-- Controles y contador -->
+            <div class="controls-container">
+                <span class="timer-box" id="sessionTime">00:00</span>
+                <div class="controls-row mt-2 mb-8">
+                    <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16a34a"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
+                    </button>
+                    <button id="sessionPauseBtn" class="circle-btn btn-pause" title="Pausar">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#dc2626"/><rect x="9" y="8" width="2" height="8" rx="1" fill="#fff"/><rect x="13" y="8" width="2" height="8" rx="1" fill="#fff"/></svg>
+                    </button>
+                    <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#6b7280"/><path d="M12 8v4l3 3" stroke="#fff" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="6" stroke="#fff" stroke-width="2" fill="none"/></svg>
+                    </button>
+                </div>
+                <button id="exitFullscreenBtn" class="mt-8 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
+            </div>
+            <!-- HR gigante -->
+            <div class="hr-container">
+                <span id="fullscreenHeartRate">--</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wake Lock
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock was released');
+                    });
+                    console.log('Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        });
+
+        // UI Elements
+        const connectBluetoothBtn = document.getElementById('connectBluetooth');
+        const bluetoothStatusElem = document.getElementById('bluetoothStatus');
+        const heartRateDisplayElem = document.getElementById('heartRateDisplay');
+        const heartIconElem = document.getElementById('heartIcon');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const fullscreenContainer = document.getElementById('fullscreenContainer');
+        const fullscreenHeartRate = document.getElementById('fullscreenHeartRate');
+        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+        // Cronómetro
+        const sessionTime = document.getElementById('sessionTime');
+        const sessionPlayBtn = document.getElementById('sessionPlayBtn');
+        const sessionPauseBtn = document.getElementById('sessionPauseBtn');
+        const resetSessionBtn = document.getElementById('resetSessionBtn');
+
+        let heartRateCharacteristic = null;
+        let bleDevice = null;
+
+        // ---- Cronómetro ----
+        let sessionInterval = null;
+        let sessionStart = null;
+        let sessionElapsed = 0;
+        let sessionRunning = false;
+
+        function formatDuration(ms) {
+            const total = Math.floor(ms / 1000);
+            const m = Math.floor(total / 60);
+            const s = total % 60;
+            return [
+                m.toString().padStart(2, '0'),
+                s.toString().padStart(2, '0')
+            ].join(':');
+        }
+        function startSession() {
+            if (!sessionRunning) {
+                sessionRunning = true;
+                sessionStart = Date.now() - sessionElapsed;
+                sessionInterval = setInterval(updateSessionTime, 1000);
+            }
+        }
+        function pauseSession() {
+            if (sessionRunning) {
+                sessionRunning = false;
+                sessionElapsed = Date.now() - sessionStart;
+                clearInterval(sessionInterval);
+            }
+        }
+        function resetSession() {
+            sessionRunning = false;
+            sessionElapsed = 0;
+            clearInterval(sessionInterval);
+            sessionTime.textContent = "00:00";
+        }
+        function updateSessionTime() {
+            if (sessionRunning) {
+                sessionElapsed = Date.now() - sessionStart;
+            }
+            sessionTime.textContent = formatDuration(sessionElapsed);
+        }
+        sessionPlayBtn.addEventListener('click', startSession);
+        sessionPauseBtn.addEventListener('click', pauseSession);
+        resetSessionBtn.addEventListener('click', resetSession);
+
+        // BLE + BPM logic
+        connectBluetoothBtn.addEventListener('click', async () => {
+            if (!navigator.bluetooth) {
+                bluetoothStatusElem.textContent = 'Error: Web Bluetooth no es compatible.';
+                bluetoothStatusElem.classList.add('text-red-600');
+                return;
+            }
+            try {
+                bluetoothStatusElem.textContent = 'Buscando sensor...';
+                connectBluetoothBtn.disabled = true;
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['heart_rate'] }],
+                    optionalServices: ['device_information']
+                });
+                bluetoothStatusElem.textContent = `Conectando a ${bleDevice.name || 'dispositivo'}...`;
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                const server = await bleDevice.gatt.connect();
+                bluetoothStatusElem.textContent = 'Obteniendo servicio...';
+                const service = await server.getPrimaryService('heart_rate');
+                heartRateCharacteristic = await service.getCharacteristic('heart_rate_measurement');
+                await heartRateCharacteristic.startNotifications();
+                bluetoothStatusElem.textContent = '¡Conectado! Escuchando latidos...';
+                bluetoothStatusElem.classList.add('text-green-600');
+                requestWakeLock();
+                heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
+            } catch (error) {
+                console.error('Bluetooth Error:', error);
+                bluetoothStatusElem.textContent = `Error: ${error.message}`;
+                bluetoothStatusElem.classList.add('text-red-600');
+                connectBluetoothBtn.disabled = false;
+            }
+        });
+
+        function handleHeartRateNotification(event) {
+            const value = event.target.value;
+            const heartRate = parseHeartRate(value);
+            heartRateDisplayElem.textContent = heartRate;
+            updateFullScreenHeartRate(heartRate);
+            if (heartRate > 0) {
+                const animationDuration = 60 / heartRate;
+                heartIconElem.style.animationDuration = `${animationDuration.toFixed(2)}s`;
+                heartIconElem.classList.add('heartbeat-animation');
+            } else {
+                heartIconElem.classList.remove('heartbeat-animation');
+            }
+        }
+
+        function parseHeartRate(value) {
+            const flags = value.getUint8(0);
+            const rate16Bits = (flags & 0x1) !== 0;
+            if (rate16Bits) {
+                return value.getUint16(1, true);
+            } else {
+                return value.getUint8(1);
+            }
+        }
+
+        function onDisconnected() {
+            bluetoothStatusElem.textContent = 'Dispositivo desconectado.';
+            bluetoothStatusElem.classList.remove('text-green-600');
+            bluetoothStatusElem.classList.add('text-red-600');
+            heartRateDisplayElem.textContent = '--';
+            heartIconElem.classList.remove('heartbeat-animation');
+            connectBluetoothBtn.disabled = false;
+            if (heartRateCharacteristic) {
+                heartRateCharacteristic.removeEventListener('characteristicvaluechanged', handleHeartRateNotification);
+                heartRateCharacteristic = null;
+            }
+            updateFullScreenHeartRate('--');
+        }
+
+        // --- Pantalla Completa ---
+        // Usar "prototipo" ancho para fijar el tamaño, mostrar el valor real
+        let latestHR = '--';
+        function enterFullScreen() {
+            fullscreenContainer.classList.remove('hidden');
+            if (document.documentElement.requestFullscreen) {
+                fullscreenContainer.requestFullscreen();
+            }
+            setTimeout(() => fitHeartRateFontSize(latestHR), 200);
+        }
+        function exitFullScreen() {
+            fullscreenContainer.classList.add('hidden');
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        }
+        fullscreenBtn.addEventListener('click', enterFullScreen);
+        exitFullscreenBtn.addEventListener('click', exitFullScreen);
+
+        // Dynamic font size con prototipo
+        function fitHeartRateFontSize(valueToShow = '--') {
+            const el = fullscreenHeartRate;
+            if (!el) return;
+            // Usar valor "ancho" (ejemplo "188") para tamaño, luego mostrar el real
+            const proto = '188';
+            el.textContent = proto;
+            let boxW, boxH;
+            if (window.matchMedia("(orientation: landscape)").matches) {
+                boxW = window.innerWidth * 0.53;
+                boxH = window.innerHeight * 0.93;
+            } else {
+                boxW = window.innerWidth * 0.95;
+                boxH = window.innerHeight * 0.33;
+            }
+            el.style.fontSize = '200px';
+            const rect = el.getBoundingClientRect();
+            const scaleW = boxW / rect.width;
+            const scaleH = boxH / rect.height;
+            const scale = Math.min(scaleW, scaleH, 1.17);
+            const newFontSize = 200 * scale;
+            el.style.fontSize = newFontSize + 'px';
+            // Ahora sí, el valor real
+            el.textContent = valueToShow;
+        }
+        function updateFullScreenHeartRate(bpm) {
+            latestHR = bpm;
+            if (!fullscreenContainer.classList.contains('hidden')) {
+                fitHeartRateFontSize(bpm);
+            }
+        }
+        window.addEventListener('resize', () => {
+            if (!fullscreenContainer.classList.contains('hidden')) {
+                fitHeartRateFontSize(latestHR);
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                fullscreenContainer.classList.add('hidden');
+            } else {
+                setTimeout(() => fitHeartRateFontSize(latestHR), 100);
+            }
+        });
+
+        updateFullScreenHeartRate('--');
+    </script>
+</body>
+</html>
