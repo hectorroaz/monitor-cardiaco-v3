@@ -12,6 +12,8 @@
     body { font-family: 'Inter', sans-serif; }
     button { transition: background-color 0.3s ease, transform 0.1s ease; }
     button:active { transform: scale(0.98); }
+    select { color: #fff; background: #23272f; border: 1px solid #444; border-radius: 8px; padding: 0.5em 1.2em; font-size: 1rem; }
+    select:focus { outline: 2px solid #a3e635; }
     @keyframes pulsate {
       0% { transform: scale(1);}
       50% { transform: scale(1.15);}
@@ -107,20 +109,24 @@
     .hr-yellow { color: #fde047 !important; }
     .hr-orange { color: #fb923c !important; }
     .hr-red { color: #ef4444 !important; }
-    .semaforo-dot {
-      width: 2.2rem;
-      height: 2.2rem;
-      border-radius: 50%;
-      display: inline-block;
-      margin-left: 1.1vw;
-      border: 2.5px solid #333;
-      background: #2d3748;
-      transition: background 0.25s, box-shadow 0.2s;
-      vertical-align: middle;
+    .indicador-flecha {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 2vw;
+      font-size: 3rem;
+      font-weight: 700;
+      transition: color 0.18s;
+      color: #f59e42;
+      text-shadow: 0 2px 9px #0007;
+      opacity: 1;
+      min-width: 2.7rem;
+      height: 2.7rem;
+      user-select: none;
     }
-    .sem-green { background: #22c55e !important; box-shadow: 0 0 0 2px #22c55e44;}
-    .sem-yellow { background: #fde047 !important; box-shadow: 0 0 0 2px #fde04766;}
-    .sem-red { background: #ef4444 !important; box-shadow: 0 0 0 2px #ef444477;}
+    .indicador-flecha.arriba { color: #f87171; } /* Rojo suave */
+    .indicador-flecha.abajo { color: #60a5fa; }  /* Azul claro */
+    .indicador-flecha.ok { opacity: 0; }         /* Invisible si ok */
     @media (orientation: landscape) {
       .fullscreen-flex-vertical {
         flex-direction: row;
@@ -166,6 +172,14 @@
       border: 1.7px solid #444;
       text-align: center;
     }
+    .descPlan {
+      color: #e0e0e0;
+      font-size: 0.97rem;
+      padding: 0.35em 0.6em 0.2em 0.6em;
+      text-align: center;
+      margin-bottom: 0.1em;
+      min-height: 2.6em;
+    }
   </style>
 </head>
 <body class="bg-black text-white flex items-center justify-center min-h-screen p-4">
@@ -173,8 +187,11 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.3.1</div>
-      <div id="todaySuggestion" class="text-lime-400 font-semibold text-base mt-1 mb-3"></div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.3.2</div>
+      <div class="flex flex-col items-center mb-2">
+        <select id="planSelector"></select>
+        <span id="planDesc" class="descPlan"></span>
+      </div>
       <p class="text-gray-400 mt-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -221,44 +238,78 @@
       <div class="hr-container">
         <span id="fullscreenHeartRateProto" class="hr-size-proto">188</span>
         <span id="fullscreenHeartRateVisible">--</span>
-        <span id="semaforoDot" class="semaforo-dot"></span>
+        <span id="indicadorFlecha" class="indicador-flecha"></span>
       </div>
     </div>
     <span id="zoneGoalTxt" class="zone-goal-txt"></span>
   </div>
 
   <script>
-    // --- Plan semanal y zonas objetivo por día ---
-    const weekPlan = [
-      { // 0 Domingo
-        tipo: "Caminata ligera o descanso (Z1–Z2)", objetivo: "Estrés mínimo, regeneración",
-        min: 100, max: 120, txt: "Zona objetivo hoy: 100–120 bpm (Recuperación)" 
+    // --- Planes sugeridos para seleccionar ---
+    const planes = [
+      {
+        nombre: "Caminata ligera o descanso (Z1–Z2)",
+        objetivo: "Estrés mínimo, regeneración",
+        min: 100, max: 120,
+        txt: "Zona objetivo: 100–120 bpm (Recuperación)",
+        desc: "Ideal para recuperación, regeneración, fatiga acumulada, día suave."
       },
-      { // 1 Lunes
-        tipo: "Intervalos clásicos (Z2–Z4)", objetivo: "Alta quema calórica, EPOC",
-        min: 130, max: 165, txt: "Zona objetivo hoy: 130–165 bpm (Intervalos/EPOC)" 
+      {
+        nombre: "Intervalos largos / clásicos (Z2–Z4)",
+        objetivo: "Alta quema calórica, EPOC",
+        min: 130, max: 165,
+        txt: "Zona objetivo: 130–165 bpm (Intervalos/EPOC)",
+        desc: "Para sesiones de alta intensidad, picos, gasto calórico alto, efecto postcombustión (EPOC)."
       },
-      { // 2 Martes
-        tipo: "Base aeróbica continua (Z2)", objetivo: "Máxima oxidación de grasa",
-        min: 115, max: 135, txt: "Zona objetivo hoy: 115–135 bpm (Aeróbico base)" 
+      {
+        nombre: "Base aeróbica continua (Z2)",
+        objetivo: "Máxima oxidación de grasa",
+        min: 115, max: 135,
+        txt: "Zona objetivo: 115–135 bpm (Aeróbico base)",
+        desc: "Sesión de intensidad media, estable y prolongada. Máxima quema de grasa, mínimo desgaste."
       },
-      { // 3 Miércoles
-        tipo: "Intervalos cortos y suaves (Z2–Z3)", objetivo: "Cardio variado sin fatiga",
-        min: 115, max: 150, txt: "Zona objetivo hoy: 115–150 bpm (Intervalos suaves)" 
-      },
-      { // 4 Jueves
-        tipo: "Base aeróbica continua o descanso (Z2)", objetivo: "Recuperación activa",
-        min: 115, max: 135, txt: "Zona objetivo hoy: 115–135 bpm (Aeróbico base)" 
-      },
-      { // 5 Viernes
-        tipo: "Intervalos clásicos (Z2–Z4)", objetivo: "Alta quema calórica, EPOC",
-        min: 130, max: 165, txt: "Zona objetivo hoy: 130–165 bpm (Intervalos/EPOC)" 
-      },
-      { // 6 Sábado
-        tipo: "Base aeróbica continua larga (Z2)", objetivo: "Grasa, duración",
-        min: 115, max: 135, txt: "Zona objetivo hoy: 115–135 bpm (Aeróbico base)" 
-      },
+      {
+        nombre: "Intervalos cortos y suaves (Z2–Z3)",
+        objetivo: "Cardio variado sin fatiga",
+        min: 115, max: 150,
+        txt: "Zona objetivo: 115–150 bpm (Intervalos suaves)",
+        desc: "Intervalos con cambios suaves, mejora agilidad metabólica y variabilidad sin fatiga."
+      }
     ];
+
+    // Lógica de selección
+    const planSelector = document.getElementById('planSelector');
+    const planDesc = document.getElementById('planDesc');
+    const zoneGoalTxt = document.getElementById('zoneGoalTxt');
+    let planActualIdx = 0;
+    function updatePlanUI(idx) {
+      planActualIdx = idx;
+      zoneGoalTxt.textContent = planes[idx].txt;
+      planDesc.textContent = planes[idx].desc;
+      updateFullScreenHeartRate(lastHR ?? '--');
+    }
+    // Rellenar el selector
+    function renderPlanSelector() {
+      planSelector.innerHTML = "";
+      planes.forEach((p, i) => {
+        const op = document.createElement('option');
+        op.value = i;
+        op.textContent = p.nombre + " — " + p.objetivo;
+        planSelector.appendChild(op);
+      });
+      // Selección por defecto según día
+      let def = 0;
+      const today = new Date().getDay();
+      if ([1,5].includes(today)) def = 1;
+      else if ([2,4,6].includes(today)) def = 2;
+      else if (today === 3) def = 3;
+      else def = 0;
+      planSelector.value = def;
+      updatePlanUI(def);
+    }
+    planSelector.addEventListener('change', (e) => {
+      updatePlanUI(Number(e.target.value));
+    });
 
     // --- Wake Lock ---
     let wakeLock = null;
@@ -284,7 +335,6 @@
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fullscreenContainer = document.getElementById('fullscreenContainer');
     const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
-    const todaySuggestionElem = document.getElementById('todaySuggestion');
     const resultMsg = document.getElementById('resultMsg');
     // Cronómetro
     const sessionTime = document.getElementById('sessionTime');
@@ -294,16 +344,10 @@
     // HR Visual
     const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
     const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
-    const semaforoDot = document.getElementById('semaforoDot');
-    const zoneGoalTxt = document.getElementById('zoneGoalTxt');
+    const indicadorFlecha = document.getElementById('indicadorFlecha');
 
-    // -------- PLAN SUGERIDO DÍA ---------
-    const today = new Date().getDay();
-    const sugerencia = weekPlan[today];
-    todaySuggestionElem.textContent = `Hoy: ${sugerencia.tipo} — ${sugerencia.objetivo}`;
-
-    // ----- Inicializar zona objetivo -----
-    zoneGoalTxt.textContent = sugerencia.txt;
+    // ---- Inicialización selector de planes ----
+    renderPlanSelector();
 
     // ---- Cronómetro ----
     let sessionInterval = null;
@@ -438,10 +482,21 @@
     function isInZone(hr) {
       if (isNaN(hr)) return false;
       hr = Number(hr);
-      return hr >= sugerencia.min && hr <= sugerencia.max;
+      const {min, max} = planes[planActualIdx];
+      return hr >= min && hr <= max;
     }
 
-    // --- Pantalla Completa y Semáforo ----
+    // Flecha lógica: retorna "arriba", "abajo" o "ok"
+    function getIndicadorFlecha(hr) {
+      if (isNaN(hr) || hr === '--') return 'ok';
+      hr = Number(hr);
+      const {min, max} = planes[planActualIdx];
+      if (hr < min - 2) return "arriba";
+      if (hr > max + 2) return "abajo";
+      return "ok";
+    }
+
+    // Colores por zonas clásicas (visuales)
     function getZoneClass(hr) {
       if (isNaN(hr) || hr === '--') return '';
       hr = Number(hr);
@@ -453,16 +508,7 @@
       return '';
     }
 
-    function getSemaforoClass(hr) {
-      if (isNaN(hr) || hr === '--') return '';
-      hr = Number(hr);
-      if (isInZone(hr)) return 'sem-green';
-      // tolerancia ±8 bpm para amarillo
-      if (hr >= sugerencia.min - 8 && hr <= sugerencia.max + 8) return 'sem-yellow';
-      return 'sem-red';
-    }
-
-    // Truco: ajustar SOLO la fuente del "prototipo"
+    // Ajusta fuente gigante y actualiza flecha
     function fitHeartRateFontSize() {
       const proto = fullscreenHeartRateProto;
       if (!proto) return;
@@ -474,6 +520,7 @@
         boxW = window.innerWidth * 0.95;
         boxH = window.innerHeight * 0.33;
       }
+      proto.textContent = '188';
       proto.style.fontSize = '200px';
       const rect = proto.getBoundingClientRect();
       const scaleW = boxW / rect.width;
@@ -481,20 +528,30 @@
       const scale = Math.min(scaleW, scaleH, 1.17);
       const newFontSize = 200 * scale;
       proto.style.fontSize = newFontSize + 'px';
-      // La visible SIEMPRE hereda el tamaño del prototipo
       fullscreenHeartRateVisible.style.fontSize = window.getComputedStyle(proto).fontSize;
     }
 
     function updateFullScreenHeartRate(bpm) {
       fullscreenHeartRateVisible.textContent = bpm;
       fullscreenHeartRateVisible.classList.remove('hr-blue','hr-green','hr-yellow','hr-orange','hr-red');
-      semaforoDot.classList.remove('sem-green','sem-yellow','sem-red');
       // Color HR
       const zone = getZoneClass(bpm);
       if(zone) fullscreenHeartRateVisible.classList.add(zone);
-      // Color semáforo
-      const sem = getSemaforoClass(bpm);
-      if (sem) semaforoDot.classList.add(sem);
+
+      // Indicador flecha
+      indicadorFlecha.classList.remove('arriba', 'abajo', 'ok');
+      const arrowType = getIndicadorFlecha(bpm);
+      if (arrowType === 'arriba') {
+        indicadorFlecha.classList.add('arriba');
+        indicadorFlecha.innerHTML = "&#8593;"; // Flecha arriba ↑
+      } else if (arrowType === 'abajo') {
+        indicadorFlecha.classList.add('abajo');
+        indicadorFlecha.innerHTML = "&#8595;"; // Flecha abajo ↓
+      } else {
+        indicadorFlecha.classList.add('ok');
+        indicadorFlecha.innerHTML = "";
+      }
+
       if (!fullscreenContainer.classList.contains('hidden')) {
         fitHeartRateFontSize();
       }
@@ -508,7 +565,6 @@
 
     // Manejo correcto de pantalla completa
     function enterFullScreen() {
-      // Limpia el mensaje de resumen siempre
       resultMsg.style.display = "none";
       fullscreenContainer.classList.remove('hidden');
       if (fullscreenContainer.requestFullscreen) {
@@ -527,7 +583,6 @@
         else if (document.msExitFullscreen) document.msExitFullscreen();
       }
       fullscreenContainer.classList.add('hidden');
-      // Mostrar resumen si tocó salir manual
       if (sessionElapsed > 0) {
         resultMsg.style.display = "block";
         const tiempoTotal = formatDuration(sessionElapsed);
@@ -542,13 +597,11 @@
     fullscreenBtn.addEventListener('click', enterFullScreen);
     exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
-    // Salida automática al salir de pantalla completa real
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement &&
           !document.webkitFullscreenElement &&
           !document.msFullscreenElement) {
         fullscreenContainer.classList.add('hidden');
-        // Mostrar resumen solo si corresponde
         if (sessionElapsed > 0) {
           resultMsg.style.display = "block";
           const tiempoTotal = formatDuration(sessionElapsed);
