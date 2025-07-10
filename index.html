@@ -90,8 +90,13 @@
       display: block;
       z-index: 1;
       user-select: none;
-      transition: none;
+      transition: color 0.2s;
     }
+    .hr-blue { color: #3b82f6 !important; }
+    .hr-green { color: #22d3ee !important; }
+    .hr-yellow { color: #fde047 !important; }
+    .hr-orange { color: #fb923c !important; }
+    .hr-red { color: #ef4444 !important; }
     @media (orientation: landscape) {
       .fullscreen-flex-vertical {
         flex-direction: row;
@@ -119,7 +124,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.1</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.2</div>
       <p class="text-gray-400 mt-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -147,7 +152,7 @@
     <div class="fullscreen-flex-vertical w-full h-full">
       <!-- Controles y contador -->
       <div class="controls-container">
-        <span class="timer-box" id="sessionTime">00:00</span>
+        <span class="timer-box" id="sessionTime">00:00:00</span>
         <div class="controls-row mt-2 mb-8">
           <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16a34a"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
@@ -214,9 +219,11 @@
 
     function formatDuration(ms) {
       const total = Math.floor(ms / 1000);
-      const m = Math.floor(total / 60);
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
       const s = total % 60;
       return [
+        h.toString().padStart(2, '0'),
         m.toString().padStart(2, '0'),
         s.toString().padStart(2, '0')
       ].join(':');
@@ -239,7 +246,7 @@
       sessionRunning = false;
       sessionElapsed = 0;
       clearInterval(sessionInterval);
-      sessionTime.textContent = "00:00";
+      sessionTime.textContent = "00:00:00";
     }
     function updateSessionTime() {
       if (sessionRunning) {
@@ -336,6 +343,18 @@
     fullscreenBtn.addEventListener('click', enterFullScreen);
     exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
+    // HR Color zones
+    function getZoneClass(hr) {
+      if (isNaN(hr) || hr === '--') return '';
+      hr = Number(hr);
+      if (hr >= 94 && hr < 113) return 'hr-blue';
+      if (hr >= 113 && hr < 132) return 'hr-green';
+      if (hr >= 132 && hr < 150) return 'hr-yellow';
+      if (hr >= 150 && hr < 170) return 'hr-orange';
+      if (hr >= 170) return 'hr-red';
+      return '';
+    }
+
     // Truco: ajustar SOLO la fuente del "prototipo"
     function fitHeartRateFontSize() {
       const proto = fullscreenHeartRateProto;
@@ -358,12 +377,19 @@
       // La visible SIEMPRE hereda el tamaño del prototipo
       fullscreenHeartRateVisible.style.fontSize = window.getComputedStyle(proto).fontSize;
     }
+
     function updateFullScreenHeartRate(bpm) {
       fullscreenHeartRateVisible.textContent = bpm;
+      // Quitar todas las clases de zona previas
+      fullscreenHeartRateVisible.classList.remove('hr-blue','hr-green','hr-yellow','hr-orange','hr-red');
+      // Poner clase según zona
+      const zone = getZoneClass(bpm);
+      if(zone) fullscreenHeartRateVisible.classList.add(zone);
       if (!fullscreenContainer.classList.contains('hidden')) {
         fitHeartRateFontSize();
       }
     }
+
     window.addEventListener('resize', () => {
       if (!fullscreenContainer.classList.contains('hidden')) {
         fitHeartRateFontSize();
@@ -378,7 +404,9 @@
       }
     });
 
+    // Inicializa valores por defecto
     updateFullScreenHeartRate('--');
+    sessionTime.textContent = "00:00:00";
   </script>
 </body>
 </html>
