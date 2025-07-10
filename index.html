@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Frecuencia Cardíaca BLE</title>
+  <title>Monitor de Frecuencia Cardíaca BLE (Optimizado)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
     button { transition: background-color 0.3s, transform 0.1s; }
-    button:active { transform: scale(0.98);}
-    .btn-main { width: 100%; padding: 0.85em 0; border-radius: 1em; font-weight: 600; margin-top: 1em;}
-    .zone-btns-row { display: flex; flex-direction: row; gap: 0.7em; justify-content: center; align-items: center; margin-bottom: 1.1em;}
+    button:active { transform: scale(0.98); }
+    .btn-main { width: 100%; padding: 0.85em 0; border-radius: 1em; font-weight: 600; margin-top: 1em; }
+    .zone-btns-row { display: flex; flex-direction: row; gap: 0.7em; justify-content: center; align-items: center; margin-bottom: 1.1em; }
     .zone-btn {
       border-radius: 0.9em;
       padding: 0.39em 1.05em;
@@ -24,20 +24,20 @@
       cursor: pointer;
       outline: none;
     }
-    .zone-btn.z1 { border-color: #2563eb;}
-    .zone-btn.z2 { border-color: #059669;}
-    .zone-btn.z3 { border-color: #fbbf24;}
-    .zone-btn.z4 { border-color: #fb923c;}
-    .zone-btn.active.z1 { background: #2563eb; color: #fff;}
-    .zone-btn.active.z2 { background: #059669; color: #fff;}
-    .zone-btn.active.z3 { background: #fbbf24; color: #1a1a1a;}
-    .zone-btn.active.z4 { background: #fb923c; color: #fff;}
-    .zone-desc { display: block; font-size: 1.09rem; text-align: center; margin-bottom: 1.1em; color: #e0e0e0;}
-    @keyframes pulsate { 0% { transform: scale(1);} 50% { transform: scale(1.15);} 100% { transform: scale(1);} }
-    .heartbeat-animation { animation-name: pulsate; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: ease-in-out;}
-    .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em;}
-    .controls-row { display: flex; flex-direction: row; gap: 1.4rem; justify-content: center; align-items: center;}
-    .circle-btn { width: 3.3rem; height: 3.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: none; outline: none; cursor: pointer;}
+    .zone-btn.z1 { border-color: #2563eb; }
+    .zone-btn.z2 { border-color: #059669; }
+    .zone-btn.z3 { border-color: #fbbf24; }
+    .zone-btn.z4 { border-color: #fb923c; }
+    .zone-btn.active.z1 { background: #2563eb; color: #fff; }
+    .zone-btn.active.z2 { background: #059669; color: #fff; }
+    .zone-btn.active.z3 { background: #fbbf24; color: #1a1a1a; }
+    .zone-btn.active.z4 { background: #fb923c; color: #fff; }
+    .zone-desc { display: block; font-size: 1.09rem; text-align: center; margin-bottom: 1.1em; color: #e0e0e0; }
+    @keyframes pulsate { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    .heartbeat-animation { animation-name: pulsate; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+    .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em; }
+    .controls-row { display: flex; flex-direction: row; gap: 1.4rem; justify-content: center; align-items: center; }
+    .circle-btn { width: 3.3rem; height: 3.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: none; outline: none; cursor: pointer; }
     .circle-btn svg { width: 2rem; height: 2rem; }
     .btn-play { background: #16a34a; }
     .btn-pause { background: #dc2626; }
@@ -45,17 +45,17 @@
     .btn-play:hover { background: #15803d; }
     .btn-pause:hover { background: #991b1b; }
     .btn-reset:hover { background: #334155; }
-    .fullscreen-flex-vertical { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;}
-    .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; position: relative;}
-    .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center;}
-    .hr-size-proto { opacity: 0; position: absolute; left: 0; top: 0; pointer-events: none; user-select: none; z-index: 0;}
-    #fullscreenHeartRateVisible { font-weight: 800; font-size: inherit; line-height: 1; text-align: center; word-break: break-all; white-space: nowrap; letter-spacing: -0.02em; margin: 0; padding: 0; overflow: hidden; display: block; z-index: 1; user-select: none; transition: color 0.2s;}
+    .fullscreen-flex-vertical { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
+    .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; position: relative; }
+    .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center; }
+    .hr-size-proto { opacity: 0; position: absolute; left: 0; top: 0; pointer-events: none; user-select: none; z-index: -1; }
+    #fullscreenHeartRateVisible { font-weight: 800; font-size: inherit; line-height: 1; text-align: center; word-break: break-all; white-space: nowrap; letter-spacing: -0.02em; margin: 0; padding: 0; overflow: hidden; display: block; z-index: 1; user-select: none; transition: color 0.2s; }
     .hr-blue { color: #2563eb !important; }
     .hr-green { color: #059669 !important; }
     .hr-yellow { color: #fbbf24 !important; }
     .hr-orange { color: #fb923c !important; }
     .hr-red { color: #ef4444 !important; }
-    .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: color 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none;}
+    .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: color 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none; }
     .indicador-flecha.arriba { color: #f87171; }
     .indicador-flecha.abajo { color: #60a5fa; }
     .indicador-flecha.ok { opacity: 0; }
@@ -64,10 +64,9 @@
       .controls-container { width: 45vw; max-width: 450px; min-width: 260px; height: 100vh; justify-content: center; align-items: flex-end; padding-right: 2vw; }
       .hr-container { width: 55vw; min-width: 340px; height: 100vh; justify-content: flex-start; align-items: center; }
     }
-    .zone-goal-txt { display: block; font-size: 1.17rem; color: #a3e635; letter-spacing: 0.03em; text-align: center; font-weight: 500; opacity: .96; text-shadow: 0 2px 12px #0009; margin-bottom: .4em; }
     .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
     #fullscreenContainer { display: none !important; }
-    #fullscreenContainer.active { display: block !important; position: fixed; inset: 0; background: #000; z-index: 50;}
+    #fullscreenContainer.active { display: flex !important; position: fixed; inset: 0; background: #000; z-index: 50; }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -75,7 +74,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.5</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.5 Optimizado</div>
       <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -99,22 +98,21 @@
     <div id="resultMsg" class="result-msg" style="display:none;"></div>
   </div>
 
-  <!-- Pantalla Completa -->
   <div id="fullscreenContainer">
     <div class="fullscreen-flex-vertical w-full h-full">
       <div class="controls-container">
         <div class="zone-btns-row" id="zoneBtnsRow"></div>
         <span id="zoneDesc" class="zone-desc"></span>
-        <span class="timer-box" id="sessionTime">00:00:00</span>
+        <time id="sessionTime" class="timer-box">00:00:00</time>
         <div class="controls-row mt-2 mb-8">
-          <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16a34a"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
+           <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar" aria-label="Iniciar Sesión">
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
           </button>
-          <button id="sessionPauseBtn" class="circle-btn btn-pause" title="Pausar">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#dc2626"/><rect x="9" y="8" width="2" height="8" rx="1" fill="#fff"/><rect x="13" y="8" width="2" height="8" rx="1" fill="#fff"/></svg>
+          <button id="sessionPauseBtn" class="circle-btn btn-pause" title="Pausar" aria-label="Pausar Sesión">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="8" width="2" height="8" rx="1" fill="#fff"/><rect x="13" y="8" width="2" height="8" rx="1" fill="#fff"/></svg>
           </button>
-          <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#6b7280"/><path d="M12 8v4l3 3" stroke="#fff" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="6" stroke="#fff" stroke-width="2" fill="none"/></svg>
+          <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar" aria-label="Reiniciar Sesión">
+            <svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2" fill="none"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="6"/></svg>
           </button>
         </div>
         <button id="exitFullscreenBtn" class="mt-8 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
@@ -128,7 +126,7 @@
   </div>
 
   <script>
-    // --- Variables globales
+    // --- Variables globales y constantes
     let heartRateCharacteristic = null;
     let bleDevice = null;
     let lastHR = null;
@@ -138,16 +136,17 @@
     let sessionElapsed = 0;
     let sessionRunning = false;
     let secondsInZone = 0;
+    let wakeLock = null;
 
-    // --- Zonas
-    const zonas = [
-      { id: 1, nombre: "Zona 1", rango: "94–113 bpm", min: 94, max: 113, color: "#2563eb", label: "Z1" },
-      { id: 2, nombre: "Zona 2", rango: "113–132 bpm", min: 113, max: 132, color: "#059669", label: "Z2" },
-      { id: 3, nombre: "Zona 3", rango: "132–150 bpm", min: 132, max: 150, color: "#fbbf24", label: "Z3" },
-      { id: 4, nombre: "Zona 4", rango: "150–169 bpm", min: 150, max: 169, color: "#fb923c", label: "Z4" },
+    const ZONAS = [
+      { id: 1, nombre: "Zona 1", rango: "94–113 bpm", min: 94, max: 113, color: "#2563eb", label: "Z1" },
+      { id: 2, nombre: "Zona 2", rango: "113–132 bpm", min: 113, max: 132, color: "#059669", label: "Z2" },
+      { id: 3, nombre: "Zona 3", rango: "132–150 bpm", min: 132, max: 150, color: "#fbbf24", label: "Z3" },
+      { id: 4, nombre: "Zona 4", rango: "150–169 bpm", min: 150, max: 169, color: "#fb923c", label: "Z4" },
     ];
+    const HR_ZONES_CLASSES = ['hr-blue', 'hr-green', 'hr-yellow', 'hr-orange', 'hr-red'];
 
-    // ---- Elementos UI ----
+    // --- Elementos del DOM (cacheo)
     const connectBluetoothBtn = document.getElementById('connectBluetooth');
     const bluetoothStatusElem = document.getElementById('bluetoothStatus');
     const heartRateDisplayElem = document.getElementById('heartRateDisplay');
@@ -156,69 +155,74 @@
     const fullscreenContainer = document.getElementById('fullscreenContainer');
     const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
     const resultMsg = document.getElementById('resultMsg');
-    // Cronómetro
     const sessionTime = document.getElementById('sessionTime');
     const sessionPlayBtn = document.getElementById('sessionPlayBtn');
     const sessionPauseBtn = document.getElementById('sessionPauseBtn');
     const resetSessionBtn = document.getElementById('resetSessionBtn');
-    // HR Visual
     const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
     const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
     const indicadorFlecha = document.getElementById('indicadorFlecha');
-    // Zona
     const zoneBtnsRow = document.getElementById('zoneBtnsRow');
     const zoneDesc = document.getElementById('zoneDesc');
+    
+    // ---- Lógica de la aplicación ----
 
-    // --- Renderizar botones de zona
-    function renderZoneBtns() {
-      zoneBtnsRow.innerHTML = "";
-      zonas.forEach((z, i) => {
-        const btn = document.createElement("button");
-        btn.className = `zone-btn z${z.id}` + (zoneActual == z.id ? " active" : "");
-        btn.textContent = z.label;
-        btn.title = z.nombre + " (" + z.rango + ")";
-        btn.onclick = () => {
-          zoneActual = z.id;
-          renderZoneBtns();
-          updateZoneDesc();
-          updateFullScreenHeartRate(lastHR ?? '--');
-        };
-        zoneBtnsRow.appendChild(btn);
-      });
-    }
     function updateZoneDesc() {
-      const z = zonas.find(x => x.id == zoneActual);
+      const z = ZONAS.find(x => x.id == zoneActual);
       zoneDesc.innerHTML = `<b>${z.nombre}</b>: <span style="color:${z.color};font-weight:700">${z.rango}</span>`;
     }
 
-    // --- Wake Lock ---
-    let wakeLock = null;
+    // REFACTOR: Crear los botones de zona una sola vez para mejorar la eficiencia.
+    function setupZoneButtons() {
+        ZONAS.forEach(z => {
+            const btn = document.createElement("button");
+            btn.className = `zone-btn z${z.id}`;
+            btn.textContent = z.label;
+            btn.title = `${z.nombre} (${z.rango})`;
+            btn.dataset.zoneId = z.id; // Guardar el ID de la zona en el dataset
+            if (z.id === zoneActual) {
+                btn.classList.add("active");
+            }
+            zoneBtnsRow.appendChild(btn);
+        });
+    }
+
+    // REFACTOR: Usar delegación de eventos para manejar los clicks en los botones de zona.
+    zoneBtnsRow.addEventListener('click', (event) => {
+        const clickedBtn = event.target.closest('.zone-btn');
+        if (!clickedBtn) return;
+
+        const newZoneId = parseInt(clickedBtn.dataset.zoneId, 10);
+        if (newZoneId === zoneActual) return;
+        
+        zoneActual = newZoneId;
+
+        // Actualizar clases 'active' de forma eficiente
+        zoneBtnsRow.querySelector('.zone-btn.active')?.classList.remove('active');
+        clickedBtn.classList.add('active');
+        
+        updateZoneDesc();
+        updateFullScreenHeartRate(lastHR ?? '--');
+    });
+
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {
           wakeLock = await navigator.wakeLock.request('screen');
-          wakeLock.addEventListener('release', () => {});
         }
-      } catch (err) {}
-    }
-    document.addEventListener('visibilitychange', () => {
-      if (wakeLock !== null && document.visibilityState === 'visible') {
-        requestWakeLock();
+      } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
       }
-    });
-
-    // ---- Cronómetro ----
-    function formatDuration(ms) {
-      const total = Math.floor(ms / 1000);
-      const h = Math.floor(total / 3600);
-      const m = Math.floor((total % 3600) / 60);
-      const s = total % 60;
-      return [
-        h.toString().padStart(2, '0'),
-        m.toString().padStart(2, '0'),
-        s.toString().padStart(2, '0')
-      ].join(':');
     }
+
+    function formatDuration(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
     function startSession() {
       if (!sessionRunning) {
         sessionRunning = true;
@@ -226,37 +230,32 @@
         sessionInterval = setInterval(updateSessionTime, 1000);
       }
     }
+
     function pauseSession() {
       if (sessionRunning) {
         sessionRunning = false;
-        sessionElapsed = Date.now() - sessionStart;
         clearInterval(sessionInterval);
-      }
-    }
-    function resetSession() {
-      sessionRunning = false;
-      sessionElapsed = 0;
-      secondsInZone = 0;
-      clearInterval(sessionInterval);
-      sessionTime.textContent = "00:00:00";
-    }
-    function updateSessionTime() {
-      if (sessionRunning) {
         sessionElapsed = Date.now() - sessionStart;
-        sessionTime.textContent = formatDuration(sessionElapsed);
-        if (lastHR && isInZone(lastHR)) {
-          secondsInZone++;
-        }
-      } else {
-        sessionTime.textContent = formatDuration(sessionElapsed);
       }
     }
-    sessionPlayBtn.addEventListener('click', startSession);
-    sessionPauseBtn.addEventListener('click', pauseSession);
-    resetSessionBtn.addEventListener('click', resetSession);
 
-    // ---- BLE + BPM logic ----
-    connectBluetoothBtn.addEventListener('click', async () => {
+    function resetSession() {
+        pauseSession();
+        sessionElapsed = 0;
+        secondsInZone = 0;
+        updateSessionTime(); // Actualiza el display a 00:00:00
+    }
+
+    function updateSessionTime() {
+        const currentElapsed = sessionRunning ? Date.now() - sessionStart : sessionElapsed;
+        sessionTime.textContent = formatDuration(currentElapsed);
+        
+        if (sessionRunning && lastHR && isInZone(lastHR)) {
+            secondsInZone++;
+        }
+    }
+
+    async function connectToBluetooth() {
       if (!navigator.bluetooth) {
         bluetoothStatusElem.textContent = 'Error: Web Bluetooth no es compatible.';
         bluetoothStatusElem.classList.add('text-red-600');
@@ -269,13 +268,16 @@
           filters: [{ services: ['heart_rate'] }],
           optionalServices: ['device_information']
         });
+        
         bluetoothStatusElem.textContent = `Conectando a ${bleDevice.name || 'dispositivo'}...`;
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
         const server = await bleDevice.gatt.connect();
+        
         bluetoothStatusElem.textContent = 'Obteniendo servicio...';
         const service = await server.getPrimaryService('heart_rate');
         heartRateCharacteristic = await service.getCharacteristic('heart_rate_measurement');
         await heartRateCharacteristic.startNotifications();
+        
         bluetoothStatusElem.textContent = '¡Conectado! Escuchando latidos...';
         bluetoothStatusElem.classList.add('text-green-600');
         connectBluetoothBtn.disabled = false;
@@ -286,31 +288,28 @@
         bluetoothStatusElem.classList.add('text-red-600');
         connectBluetoothBtn.disabled = false;
       }
-    });
-
-    function handleHeartRateNotification(event) {
-      const value = event.target.value;
-      const heartRate = parseHeartRate(value);
-      heartRateDisplayElem.textContent = heartRate;
-      lastHR = heartRate;
-      updateFullScreenHeartRate(heartRate);
-      if (heartRate > 0) {
-        const animationDuration = 60 / heartRate;
-        heartIconElem.style.animationDuration = `${animationDuration.toFixed(2)}s`;
-        heartIconElem.classList.add('heartbeat-animation');
-      } else {
-        heartIconElem.classList.remove('heartbeat-animation');
-      }
     }
-
+    
     function parseHeartRate(value) {
       const flags = value.getUint8(0);
       const rate16Bits = (flags & 0x1) !== 0;
-      if (rate16Bits) {
-        return value.getUint16(1, true);
-      } else {
-        return value.getUint8(1);
-      }
+      return rate16Bits ? value.getUint16(1, true) : value.getUint8(1);
+    }
+    
+    function handleHeartRateNotification(event) {
+        const heartRate = parseHeartRate(event.target.value);
+        lastHR = heartRate;
+        // MEJORA: Usar textContent para mayor seguridad y rendimiento
+        heartRateDisplayElem.textContent = heartRate;
+        updateFullScreenHeartRate(heartRate);
+
+        if (heartRate > 0) {
+            const animationDuration = 60 / heartRate;
+            heartIconElem.style.animationDuration = `${animationDuration.toFixed(2)}s`;
+            heartIconElem.classList.add('heartbeat-animation');
+        } else {
+            heartIconElem.classList.remove('heartbeat-animation');
+        }
     }
 
     function onDisconnected() {
@@ -325,147 +324,151 @@
       updateFullScreenHeartRate('--');
       lastHR = null;
     }
-
-    // --- Zona objetivo lógica ---
+    
     function isInZone(hr) {
       if (isNaN(hr)) return false;
-      hr = Number(hr);
-      const z = zonas.find(x => x.id == zoneActual);
+      const z = ZONAS.find(x => x.id == zoneActual);
       return hr >= z.min && hr <= z.max;
     }
-
+    
     function getIndicadorFlecha(hr) {
       if (isNaN(hr) || hr === '--') return 'ok';
-      hr = Number(hr);
-      const z = zonas.find(x => x.id == zoneActual);
+      const z = ZONAS.find(x => x.id == zoneActual);
       if (hr < z.min - 2) return "arriba";
       if (hr > z.max + 2) return "abajo";
       return "ok";
     }
-
+    
     function getZoneClass(hr) {
-      if (isNaN(hr) || hr === '--') return '';
-      hr = Number(hr);
-      if (hr >= 94 && hr < 113) return 'hr-blue';
-      if (hr >= 113 && hr < 132) return 'hr-green';
-      if (hr >= 132 && hr < 150) return 'hr-yellow';
-      if (hr >= 150 && hr < 170) return 'hr-orange';
-      if (hr >= 170) return 'hr-red';
-      return '';
+        if (isNaN(hr) || hr === '--') return '';
+        if (hr >= 170) return 'hr-red';
+        if (hr >= 150) return 'hr-orange';
+        if (hr >= 132) return 'hr-yellow';
+        if (hr >= 113) return 'hr-green';
+        if (hr >= 94) return 'hr-blue';
+        return '';
     }
 
     function fitHeartRateFontSize() {
-      const proto = fullscreenHeartRateProto;
-      if (!proto) return;
-      let boxW, boxH;
-      if (window.matchMedia("(orientation: landscape)").matches) {
-        boxW = window.innerWidth * 0.53;
-        boxH = window.innerHeight * 0.93;
-      } else {
-        boxW = window.innerWidth * 0.95;
-        boxH = window.innerHeight * 0.33;
-      }
-      proto.textContent = '188';
-      proto.style.fontSize = '200px';
-      const rect = proto.getBoundingClientRect();
-      const scaleW = boxW / rect.width;
-      const scaleH = boxH / rect.height;
-      const scale = Math.min(scaleW, scaleH, 1.17);
+      if (!fullscreenHeartRateProto) return;
+      
+      const media = window.matchMedia("(orientation: landscape)");
+      const widthFactor = media.matches ? 0.53 : 0.95;
+      const heightFactor = media.matches ? 0.93 : 0.33;
+      
+      const boxW = window.innerWidth * widthFactor;
+      const boxH = window.innerHeight * heightFactor;
+      
+      fullscreenHeartRateProto.textContent = '188';
+      fullscreenHeartRateProto.style.fontSize = '200px';
+      
+      const rect = fullscreenHeartRateProto.getBoundingClientRect();
+      const scale = Math.min(boxW / rect.width, boxH / rect.height, 1.17);
       const newFontSize = 200 * scale;
-      proto.style.fontSize = newFontSize + 'px';
-      fullscreenHeartRateVisible.style.fontSize = window.getComputedStyle(proto).fontSize;
+
+      fullscreenHeartRateVisible.style.fontSize = newFontSize + 'px';
     }
 
     function updateFullScreenHeartRate(bpm) {
       fullscreenHeartRateVisible.textContent = bpm;
-      fullscreenHeartRateVisible.classList.remove('hr-blue','hr-green','hr-yellow','hr-orange','hr-red');
-      const zone = getZoneClass(bpm);
-      if(zone) fullscreenHeartRateVisible.classList.add(zone);
-      indicadorFlecha.classList.remove('arriba', 'abajo', 'ok');
+      // MEJORA: Eliminar todas las clases de zona de una vez.
+      fullscreenHeartRateVisible.classList.remove(...HR_ZONES_CLASSES);
+      
+      const zoneClass = getZoneClass(bpm);
+      if (zoneClass) fullscreenHeartRateVisible.classList.add(zoneClass);
+      
       const arrowType = getIndicadorFlecha(bpm);
-      if (arrowType === 'arriba') {
-        indicadorFlecha.classList.add('arriba');
-        indicadorFlecha.innerHTML = "&#8593;";
-      } else if (arrowType === 'abajo') {
-        indicadorFlecha.classList.add('abajo');
-        indicadorFlecha.innerHTML = "&#8595;";
-      } else {
-        indicadorFlecha.classList.add('ok');
-        indicadorFlecha.innerHTML = "";
-      }
+      indicadorFlecha.classList.remove('arriba', 'abajo', 'ok');
+      indicadorFlecha.classList.add(arrowType);
+      
+      if (arrowType === 'arriba') indicadorFlecha.innerHTML = "&#8593;";
+      else if (arrowType === 'abajo') indicadorFlecha.innerHTML = "&#8595;";
+      else indicadorFlecha.textContent = "";
+      
       if (fullscreenContainer.classList.contains('active')) {
         fitHeartRateFontSize();
       }
     }
-
-    window.addEventListener('resize', () => {
-      if (fullscreenContainer.classList.contains('active')) {
-        fitHeartRateFontSize();
-      }
-    });
-
+    
     function enterFullScreen() {
       resultMsg.style.display = "none";
-      fullscreenContainer.style.display = "block";
       fullscreenContainer.classList.add('active');
-      renderZoneBtns();
+      
       updateZoneDesc();
-      setTimeout(fitHeartRateFontSize, 250);
-      if (fullscreenContainer.requestFullscreen) {
-        fullscreenContainer.requestFullscreen();
-      } else if (fullscreenContainer.webkitRequestFullscreen) {
-        fullscreenContainer.webkitRequestFullscreen();
-      } else if (fullscreenContainer.msRequestFullscreen) {
-        fullscreenContainer.msRequestFullscreen();
+      setTimeout(fitHeartRateFontSize, 50); // Ajustar tamaño de fuente al entrar
+
+      try {
+        if (fullscreenContainer.requestFullscreen) {
+            fullscreenContainer.requestFullscreen();
+        } else if (fullscreenContainer.webkitRequestFullscreen) {
+            fullscreenContainer.webkitRequestFullscreen();
+        }
+      } catch(err) {
+        console.error("No se pudo entrar en pantalla completa:", err);
       }
     }
+
+    // REFACTOR: Centralizar la lógica de salida de pantalla completa para no repetir código.
+    function handleExitFullscreen() {
+        fullscreenContainer.classList.remove('active');
+        
+        if (sessionElapsed > 0) {
+            const totalTime = formatDuration(sessionElapsed);
+            const timeInZone = formatDuration(secondsInZone * 1000);
+            const proportion = secondsInZone / Math.max(1, Math.floor(sessionElapsed / 1000));
+            let adherence = "Mejorable";
+            if (proportion > 0.75) adherence = "¡Excelente adherencia!";
+            else if (proportion > 0.5) adherence = "Bien, puedes mejorar";
+
+            resultMsg.innerHTML = `Duración: <b>${totalTime}</b> &nbsp; | &nbsp; En zona: <b>${timeInZone}</b><br>${adherence}`;
+            resultMsg.style.display = "block";
+        }
+    }
+
     function exitFullScreen() {
-      if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
         if (document.exitFullscreen) document.exitFullscreen();
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-        else if (document.msExitFullscreen) document.msExitFullscreen();
       }
-      fullscreenContainer.classList.remove('active');
-      fullscreenContainer.style.display = "none";
-      if (sessionElapsed > 0) {
-        resultMsg.style.display = "block";
-        const tiempoTotal = formatDuration(sessionElapsed);
-        const tiempoEnZona = formatDuration(secondsInZone * 1000);
-        let adherencia = "Mejorable";
-        const prop = secondsInZone / Math.max(1,Math.floor(sessionElapsed/1000));
-        if (prop > 0.75) adherencia = "¡Excelente adherencia!";
-        else if (prop > 0.5) adherencia = "Bien, puedes mejorar";
-        resultMsg.innerHTML = `Duración: <b>${tiempoTotal}</b> &nbsp; | &nbsp; Tiempo en zona: <b>${tiempoEnZona}</b><br>${adherencia}`;
-      }
+      handleExitFullscreen(); // Llama a la función centralizada
     }
-    fullscreenBtn.addEventListener('click', enterFullScreen);
-    exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
-    document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement &&
-          !document.webkitFullscreenElement &&
-          !document.msFullscreenElement) {
-        fullscreenContainer.classList.remove('active');
-        fullscreenContainer.style.display = "none";
-        if (sessionElapsed > 0) {
-          resultMsg.style.display = "block";
-          const tiempoTotal = formatDuration(sessionElapsed);
-          const tiempoEnZona = formatDuration(secondsInZone * 1000);
-          let adherencia = "Mejorable";
-          const prop = secondsInZone / Math.max(1,Math.floor(sessionElapsed/1000));
-          if (prop > 0.75) adherencia = "¡Excelente adherencia!";
-          else if (prop > 0.5) adherencia = "Bien, puedes mejorar";
-          resultMsg.innerHTML = `Duración: <b>${tiempoTotal}</b> &nbsp; | &nbsp; Tiempo en zona: <b>${tiempoEnZona}</b><br>${adherencia}`;
-        }
-      }
-      else {
-        resultMsg.style.display = "none";
-        setTimeout(fitHeartRateFontSize, 100);
-      }
+    // --- Inicialización y Event Listeners ---
+    document.addEventListener('DOMContentLoaded', () => {
+        setupZoneButtons();
+        updateZoneDesc();
+        updateFullScreenHeartRate('--');
+        sessionTime.textContent = "00:00:00";
+
+        connectBluetoothBtn.addEventListener('click', connectToBluetooth);
+        sessionPlayBtn.addEventListener('click', startSession);
+        sessionPauseBtn.addEventListener('click', pauseSession);
+        resetSessionBtn.addEventListener('click', resetSession);
+        fullscreenBtn.addEventListener('click', enterFullScreen);
+        exitFullscreenBtn.addEventListener('click', exitFullScreen);
+
+        window.addEventListener('resize', () => {
+            if (fullscreenContainer.classList.contains('active')) {
+                fitHeartRateFontSize();
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        });
+        
+        document.addEventListener('fullscreenchange', () => {
+            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!isFullscreen && fullscreenContainer.classList.contains('active')) {
+                handleExitFullscreen();
+            } else if (isFullscreen) {
+                resultMsg.style.display = "none";
+                setTimeout(fitHeartRateFontSize, 100);
+            }
+        });
     });
-
-    updateFullScreenHeartRate('--');
-    sessionTime.textContent = "00:00:00";
   </script>
 </body>
 </html>
