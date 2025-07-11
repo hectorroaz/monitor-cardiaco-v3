@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Frecuencia Cardíaca BLE v3.6 (Mod)</title>
+  <title>Monitor de Frecuencia Cardíaca BLE v3.6.1 (Mod)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -14,7 +14,7 @@
     button { transition: background-color 0.3s, transform 0.1s; }
     button:active { transform: scale(0.98); }
     .btn-main { width: 100%; padding: 0.85em 0; border-radius: 1em; font-weight: 600; margin-top: 1em; }
-    .zone-btns-row { display: flex; flex-direction: row; gap: 0.7em; justify-content: center; align-items: center; margin-bottom: 1.1em; }
+    .zone-btns-row { display: flex; flex-direction: row; gap: 0.7em; justify-content: center; align-items: center; margin-bottom: 1.1em; flex-wrap: wrap; }
     .zone-btn { border-radius: 0.9em; padding: 0.39em 1.05em; font-size: 1.18rem; font-weight: 700; border: 2.5px solid #fff2; background: #23272f; color: #fff; transition: all 0.18s; cursor: pointer; outline: none; }
     .zone-btn.z1 { border-color: var(--c-z1); } .zone-btn.z2 { border-color: var(--c-z2); } .zone-btn.z3 { border-color: var(--c-z3); } .zone-btn.z4 { border-color: var(--c-z4); }
     .zone-btn.active.z1 { background: var(--c-z1); color: #fff; } .zone-btn.active.z2 { background: var(--c-z2); color: #fff; } .zone-btn.active.z3 { background: var(--c-z3); color: #1a1a1a; } .zone-btn.active.z4 { background: var(--c-z4); color: #fff; }
@@ -35,10 +35,39 @@
     .hr-blue { color: var(--c-z1) !important; } .hr-green { color: var(--c-z2) !important; } .hr-yellow { color: var(--c-z3) !important; } .hr-orange { color: var(--c-z4) !important; } .hr-red { color: #ef4444 !important; }
     .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: all 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none; }
     .indicador-flecha.arriba { color: #f87171; } .indicador-flecha.abajo { color: #60a5fa; } .indicador-flecha.ok { opacity: 0; transform: scale(0.5); }
-    @media (orientation: landscape) { .fullscreen-flex-vertical { flex-direction: row; align-items: stretch; gap: 0; } .controls-container { width: 45vw; max-width: 450px; min-width: 260px; height: 100vh; justify-content: center; align-items: flex-end; padding-right: 2vw; } .hr-container { width: 55vw; min-width: 340px; height: 100vh; justify-content: flex-start; align-items: center; } }
+    @media (orientation: landscape) {
+      .fullscreen-flex-vertical {
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0;
+      }
+      .controls-container {
+        width: 45vw;
+        max-width: 450px;
+        min-width: 220px;
+        height: 100vh;
+        justify-content: center;
+        align-items: center; /* <-- centra vertical y horizontal */
+        padding: 2vw 1vw 2vw 2vw; /* más padding izquierdo y derecho */
+        box-sizing: border-box;
+        overflow-y: auto; /* si hay overflow, permite scroll */
+      }
+      .hr-container {
+        width: 55vw;
+        min-width: 200px;
+        height: 100vh;
+        justify-content: center;
+        align-items: center;
+      }
+      .zone-btns-row {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.6em;
+        margin-bottom: 1em;
+      }
+    }
     .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
     #fullscreenContainer { display: none !important; } #fullscreenContainer.active { display: flex !important; position: fixed; inset: 0; background: #000; z-index: 50; }
-    
     /* Estilos para el Modal de Zonas */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
     .modal-overlay.active { display: flex; }
@@ -53,7 +82,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.6</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.6.1</div>
       <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -153,7 +182,28 @@
         userAgeInput: document.getElementById('userAge'),
         zoneInputsContainer: document.getElementById('zoneInputsContainer'),
     };
-    
+
+    // --- WAKE LOCK MEJORADO
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => {
+                    // Si se libera el WakeLock, lo volvemos a pedir
+                    requestWakeLock();
+                });
+            }
+        } catch (e) {
+            console.warn("WakeLock failed:", e);
+        }
+    }
+    // Vuelve a pedirlo si la pestaña vuelve a estar visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    });
+
     // ---- Lógica de la aplicación ----
 
     function openZoneEditor() {
@@ -297,7 +347,7 @@
         ui.statusElem.textContent = '¡Conectado! Escuchando latidos...';
         ui.statusElem.classList.add('text-green-600');
         ui.connectBtn.disabled = false;
-        if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(lock => wakeLock = lock);
+        requestWakeLock();
         heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
       } catch (error) {
         ui.statusElem.textContent = `Error: ${error.message}`;
@@ -409,6 +459,7 @@
       updateZoneVisuals();
       setTimeout(fitHeartRateFontSize, 50);
       if (ui.fullscreenContainer.requestFullscreen) ui.fullscreenContainer.requestFullscreen();
+      requestWakeLock();
     }
 
     function handleExitFullscreen() {
