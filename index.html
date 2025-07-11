@@ -36,35 +36,41 @@
     .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: all 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none; }
     .indicador-flecha.arriba { color: #f87171; } .indicador-flecha.abajo { color: #60a5fa; } .indicador-flecha.ok { opacity: 0; transform: scale(0.5); }
     @media (orientation: landscape) {
-      .fullscreen-flex-vertical {
-        flex-direction: row;
-        align-items: center; /* <-- CAMBIO: De 'stretch' a 'center' */
-        gap: 0;
-      }
-      .controls-container {
-        width: 45vw;
-        max-width: 450px;
-        min-width: 220px;
-        height: auto; /* <-- CAMBIO: De '100vh' a 'auto' */
-        justify-content: center;
-        align-items: center;
-        padding: 2vw 1vw;
-        box-sizing: border-box;
-      }
-      .hr-container {
-        width: 55vw;
-        min-width: 200px;
-        height: 100vh;
-        justify-content: center;
-        align-items: center;
-      }
-      .zone-btns-row {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.6em;
-        margin-bottom: 1em;
-      }
-    }
+  .fullscreen-flex-vertical {
+    flex-direction: row;
+    align-items: center; /* centra verticalmente los dos bloques */
+    gap: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+  .controls-container {
+    width: 45vw;
+    max-width: 450px;
+    min-width: 220px;
+    /* Quita height: 100vh; */
+    justify-content: center;
+    align-items: center;
+    padding: 2vw 1vw 2vw 2vw;
+    box-sizing: border-box;
+    overflow-y: visible; /* normal, ya no hace falta scroll aquí */
+    display: flex;
+    flex-direction: column;
+  }
+  .hr-container {
+    width: 55vw;
+    min-width: 200px;
+    height: auto;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+  }
+  .zone-btns-row {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6em;
+    margin-bottom: 1em;
+  }
+}
     .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
     #fullscreenContainer { display: none !important; } #fullscreenContainer.active { display: flex !important; position: fixed; inset: 0; background: #000; z-index: 50; }
     /* Estilos para el Modal de Zonas */
