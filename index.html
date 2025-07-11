@@ -3,92 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Frecuencia Cardíaca BLE v3.6.2 (Mod)</title>
+  <title>Monitor de Frecuencia Cardíaca BLE</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-        --c-z1: #2563eb; --c-z2: #059669; --c-z3: #fbbf24; --c-z4: #fb923c;
-    }
-    body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
-    button { transition: background-color 0.3s, transform 0.1s; }
+    body { font-family: 'Inter', sans-serif; }
+    button { transition: background-color 0.3s ease, transform 0.1s ease; }
     button:active { transform: scale(0.98); }
-    .btn-main { width: 100%; padding: 0.85em 0; border-radius: 1em; font-weight: 600; margin-top: 1em; }
-    .zone-btns-row { display: flex; flex-direction: row; gap: 0.7em; justify-content: center; align-items: center; margin-bottom: 1.1em; flex-wrap: wrap; }
-    .zone-btn { border-radius: 0.9em; padding: 0.39em 1.05em; font-size: 1.18rem; font-weight: 700; border: 2.5px solid #fff2; background: #23272f; color: #fff; transition: all 0.18s; cursor: pointer; outline: none; }
-    .zone-btn.z1 { border-color: var(--c-z1); } .zone-btn.z2 { border-color: var(--c-z2); } .zone-btn.z3 { border-color: var(--c-z3); } .zone-btn.z4 { border-color: var(--c-z4); }
-    .zone-btn.active.z1 { background: var(--c-z1); color: #fff; } .zone-btn.active.z2 { background: var(--c-z2); color: #fff; } .zone-btn.active.z3 { background: var(--c-z3); color: #1a1a1a; } .zone-btn.active.z4 { background: var(--c-z4); color: #fff; }
-    .zone-desc { display: block; font-size: 1.09rem; text-align: center; margin-bottom: 1.1em; color: #e0e0e0; }
-    @keyframes pulsate { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
-    .heartbeat-animation { animation-name: pulsate; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
-    .timer-box { font-family: 'Inter', monospace; font-size: 2.7rem; font-weight: 700; color: #06b6d4; margin-bottom: 1.2em; letter-spacing: 0.04em; }
-    .controls-row { display: flex; flex-direction: row; gap: 1.4rem; justify-content: center; align-items: center; }
-    .circle-btn { width: 3.3rem; height: 3.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: none; outline: none; cursor: pointer; position: relative; }
+    @keyframes pulsate {
+      0% { transform: scale(1);}
+      50% { transform: scale(1.15);}
+      100% { transform: scale(1);}
+    }
+    .heartbeat-animation {
+      animation-name: pulsate;
+      animation-duration: 1s;
+      animation-iteration-count: infinite;
+      animation-timing-function: ease-in-out;
+    }
+    #fullscreenContainer { background: #000 !important; padding:0!important; margin:0!important; }
+    .timer-box {
+      font-family: 'Inter', monospace;
+      font-size: 2.7rem;
+      font-weight: 700;
+      color: #06b6d4;
+      margin-bottom: 1.2em;
+      letter-spacing: 0.04em;
+    }
+    .controls-row {
+      display: flex;
+      flex-direction: row;
+      gap: 1.4rem;
+      justify-content: center;
+      align-items: center;
+    }
+    .circle-btn {
+      width: 3.3rem;
+      height: 3.3rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      outline: none;
+      cursor: pointer;
+    }
     .circle-btn svg { width: 2rem; height: 2rem; }
-    .btn-play { background: #16a34a; } .btn-pause { background: #dc2626; } .btn-reset { background: #6b7280; }
-    .btn-play:hover { background: #15803d; } .btn-pause:hover { background: #991b1b; } .btn-reset:hover { background: #334155; }
-    .fullscreen-flex-vertical { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
+    .btn-play { background: #16a34a; }
+    .btn-pause { background: #dc2626; }
+    .btn-reset { background: #6b7280; }
+    .btn-play:hover { background: #15803d; }
+    .btn-pause:hover { background: #991b1b; }
+    .btn-reset:hover { background: #334155; }
+    .fullscreen-flex-vertical {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
     .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; position: relative; }
     .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center; }
-    .hr-size-proto { opacity: 0; position: absolute; left: 0; top: 0; pointer-events: none; user-select: none; z-index: -1; }
-    #fullscreenHeartRateVisible { font-weight: 800; font-size: inherit; line-height: 1; text-align: center; word-break: break-all; white-space: nowrap; letter-spacing: -0.02em; margin: 0; padding: 0; overflow: hidden; display: block; z-index: 1; user-select: none; transition: color 0.2s; }
-    .hr-blue { color: var(--c-z1) !important; } .hr-green { color: var(--c-z2) !important; } .hr-yellow { color: var(--c-z3) !important; } .hr-orange { color: var(--c-z4) !important; } .hr-red { color: #ef4444 !important; }
-    .indicador-flecha { display: inline-flex; align-items: center; justify-content: center; margin-left: 2vw; font-size: 3rem; font-weight: 700; transition: all 0.18s; color: #f59e42; text-shadow: 0 2px 9px #0007; opacity: 1; min-width: 2.7rem; height: 2.7rem; user-select: none; }
-    .indicador-flecha.arriba { color: #f87171; } .indicador-flecha.abajo { color: #60a5fa; } .indicador-flecha.ok { opacity: 0; transform: scale(0.5); }
+    .hr-size-proto {
+      opacity: 0;
+      position: absolute;
+      left: 0; top: 0; pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+    #fullscreenHeartRateVisible {
+      color: #fff;
+      font-weight: 800;
+      font-size: inherit;
+      line-height: 1;
+      text-align: center;
+      word-break: break-all;
+      white-space: nowrap;
+      letter-spacing: -0.02em;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: block;
+      z-index: 1;
+      user-select: none;
+      transition: none;
+    }
     @media (orientation: landscape) {
       .fullscreen-flex-vertical {
         flex-direction: row;
-        align-items: center; /* centro vertical los dos bloques */
+        align-items: stretch;
         gap: 0;
-        width: 100vw;
-        height: 100vh;
       }
       .controls-container {
-        width: 45vw;
-        max-width: 450px;
-        min-width: 220px;
-        /* Quita height: 100vh; */
+        width: 45vw; max-width: 450px; min-width: 260px;
+        height: 100vh;
         justify-content: center;
-        align-items: center;
-        padding: 2vw 1vw 2vw 2vw;
-        box-sizing: border-box;
-        overflow-y: visible;
-        display: flex;
-        flex-direction: column;
+        align-items: flex-end;
+        padding-right: 2vw;
       }
       .hr-container {
-        width: 55vw;
-        min-width: 200px;
-        height: auto;
-        justify-content: center;
+        width: 55vw; min-width: 340px;
+        height: 100vh;
+        justify-content: flex-start;
         align-items: center;
-        display: flex;
-      }
-      .zone-btns-row {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.6em;
-        margin-bottom: 1em;
       }
     }
-    .result-msg { background: #18181b; color: #fafafa; border-radius: 1.2rem; padding: 1.1em 1.5em; font-size: 1.25rem; font-weight: 500; margin: 0.9em auto 0 auto; max-width: 95vw; box-shadow: 0 2px 16px #0006; border: 1.7px solid #444; text-align: center; }
-    #fullscreenContainer { display: none !important; } #fullscreenContainer.active { display: flex !important; position: fixed; inset: 0; background: #000; z-index: 50; }
-    /* Estilos para el Modal de Zonas */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
-    .modal-overlay.active { display: flex; }
-    .modal-content { background: #1e1e1e; padding: 2rem; border-radius: 1.5rem; border: 1px solid #444; width: 90vw; max-width: 500px; }
-    .modal-content h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
-    .modal-input { background: #333; border: 1px solid #555; color: #fff; border-radius: 0.5em; padding: 0.5em 0.8em; width: 100%; }
-    .modal-input:focus { outline: none; border-color: var(--c-z1); }
   </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="bg-black text-white flex items-center justify-center min-h-screen p-4">
 
-  <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
+  <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.6.2</div>
-      <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.1</div>
+      <p class="text-gray-400 mt-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
       <div class="flex justify-center items-center mb-4">
@@ -98,57 +130,255 @@
       <div class="text-lg text-gray-400">BPM</div>
       <p id="bluetoothStatus" class="mt-4 text-sm text-gray-400 h-5">Estado: Desconectado</p>
     </div>
-    <div class="grid grid-cols-2 gap-4">
-        <button id="fullscreenBtn" class="btn-main bg-white text-black hover:bg-gray-100">Pantalla Completa</button>
-        <button id="editZonesBtn" class="btn-main bg-gray-700 text-white hover:bg-gray-600">Editar Zonas</button>
+    <div>
+      <button id="connectBluetooth" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+        Conectar a Sensor
+      </button>
     </div>
     <div>
-        <button id="connectBluetooth" class="btn-main bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400">Conectar a Sensor</button>
+      <button id="fullscreenBtn" class="w-full mt-3 bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+        Pantalla Completa
+      </button>
     </div>
-    <div id="resultMsg" class="result-msg" style="display:none;"></div>
   </div>
 
-  <div id="fullscreenContainer">
+  <!-- Pantalla Completa -->
+  <div id="fullscreenContainer" class="hidden fixed inset-0 bg-black z-50">
     <div class="fullscreen-flex-vertical w-full h-full">
+      <!-- Controles y contador -->
       <div class="controls-container">
-        <div class="zone-btns-row" id="zoneBtnsRow"></div>
-        <span id="zoneDesc" class="zone-desc"></span>
-        <time id="sessionTime" class="timer-box">00:00:00</time>
+        <span class="timer-box" id="sessionTime">00:00</span>
         <div class="controls-row mt-2 mb-8">
-          <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar" aria-label="Iniciar Sesión"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="10,8 16,12 10,16" fill="#fff"/></svg></button>
-          <button id="sessionPauseBtn" class="circle-btn btn-pause" title="Pausar" aria-label="Pausar Sesión"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="8" width="2" height="8" rx="1" fill="#fff"/><rect x="13" y="8" width="2" height="8" rx="1" fill="#fff"/></svg></button>
-          <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar" aria-label="Reiniciar Sesión"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2" fill="none"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="6"/></svg></button>
+          <button id="sessionPlayBtn" class="circle-btn btn-play" title="Iniciar">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16a34a"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
+          </button>
+          <button id="sessionPauseBtn" class="circle-btn btn-pause" title="Pausar">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#dc2626"/><rect x="9" y="8" width="2" height="8" rx="1" fill="#fff"/><rect x="13" y="8" width="2" height="8" rx="1" fill="#fff"/></svg>
+          </button>
+          <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#6b7280"/><path d="M12 8v4l3 3" stroke="#fff" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="6" stroke="#fff" stroke-width="2" fill="none"/></svg>
+          </button>
         </div>
         <button id="exitFullscreenBtn" class="mt-8 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
       </div>
+      <!-- HR gigante fijo -->
       <div class="hr-container">
         <span id="fullscreenHeartRateProto" class="hr-size-proto">188</span>
         <span id="fullscreenHeartRateVisible">--</span>
-        <span id="indicadorFlecha" class="indicador-flecha"></span>
       </div>
     </div>
   </div>
 
-  <div id="zoneEditorModal" class="modal-overlay">
-    <div class="modal-content space-y-4">
-        <h2>Editar Zonas de Frecuencia</h2>
-        <div class="grid grid-cols-3 gap-4 items-center">
-            <label for="userAge" class="text-right font-semibold">Tu Edad:</label>
-            <input type="number" id="userAge" class="modal-input col-span-1" placeholder="Ej: 30">
-            <button id="calculateZonesBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Calcular</button>
-        </div>
-        <div id="zoneInputsContainer" class="space-y-3 pt-4"></div>
-        <div class="flex justify-end space-x-4 pt-4">
-            <button id="closeModalBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Cerrar</button>
-            <button id="saveZonesBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg">Guardar</button>
-        </div>
-    </div>
-  </div>
+  <script>
+    // Wake Lock
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => {});
+        }
+      } catch (err) {}
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    });
 
-  <!-- (JS idéntico a la versión anterior; puedes copiar tu script aquí) -->
-  <!-- ... -->
-  <!-- No modifiqué nada en JS, solo en el CSS. Si quieres aquí va el script, avísame si lo necesitas. -->
-  <!-- Puedes tomar el <script> exactamente igual que el que ya tienes. -->
+    // UI Elements
+    const connectBluetoothBtn = document.getElementById('connectBluetooth');
+    const bluetoothStatusElem = document.getElementById('bluetoothStatus');
+    const heartRateDisplayElem = document.getElementById('heartRateDisplay');
+    const heartIconElem = document.getElementById('heartIcon');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const fullscreenContainer = document.getElementById('fullscreenContainer');
+    const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+    // Cronómetro
+    const sessionTime = document.getElementById('sessionTime');
+    const sessionPlayBtn = document.getElementById('sessionPlayBtn');
+    const sessionPauseBtn = document.getElementById('sessionPauseBtn');
+    const resetSessionBtn = document.getElementById('resetSessionBtn');
+    // HR Visual
+    const fullscreenHeartRateProto = document.getElementById('fullscreenHeartRateProto');
+    const fullscreenHeartRateVisible = document.getElementById('fullscreenHeartRateVisible');
+
+    let heartRateCharacteristic = null;
+    let bleDevice = null;
+
+    // ---- Cronómetro ----
+    let sessionInterval = null;
+    let sessionStart = null;
+    let sessionElapsed = 0;
+    let sessionRunning = false;
+
+    function formatDuration(ms) {
+      const total = Math.floor(ms / 1000);
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return [
+        m.toString().padStart(2, '0'),
+        s.toString().padStart(2, '0')
+      ].join(':');
+    }
+    function startSession() {
+      if (!sessionRunning) {
+        sessionRunning = true;
+        sessionStart = Date.now() - sessionElapsed;
+        sessionInterval = setInterval(updateSessionTime, 1000);
+      }
+    }
+    function pauseSession() {
+      if (sessionRunning) {
+        sessionRunning = false;
+        sessionElapsed = Date.now() - sessionStart;
+        clearInterval(sessionInterval);
+      }
+    }
+    function resetSession() {
+      sessionRunning = false;
+      sessionElapsed = 0;
+      clearInterval(sessionInterval);
+      sessionTime.textContent = "00:00";
+    }
+    function updateSessionTime() {
+      if (sessionRunning) {
+        sessionElapsed = Date.now() - sessionStart;
+      }
+      sessionTime.textContent = formatDuration(sessionElapsed);
+    }
+    sessionPlayBtn.addEventListener('click', startSession);
+    sessionPauseBtn.addEventListener('click', pauseSession);
+    resetSessionBtn.addEventListener('click', resetSession);
+
+    // BLE + BPM logic
+    connectBluetoothBtn.addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        bluetoothStatusElem.textContent = 'Error: Web Bluetooth no es compatible.';
+        bluetoothStatusElem.classList.add('text-red-600');
+        return;
+      }
+      try {
+        bluetoothStatusElem.textContent = 'Buscando sensor...';
+        connectBluetoothBtn.disabled = true;
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: ['heart_rate'] }],
+          optionalServices: ['device_information']
+        });
+        bluetoothStatusElem.textContent = `Conectando a ${bleDevice.name || 'dispositivo'}...`;
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        const server = await bleDevice.gatt.connect();
+        bluetoothStatusElem.textContent = 'Obteniendo servicio...';
+        const service = await server.getPrimaryService('heart_rate');
+        heartRateCharacteristic = await service.getCharacteristic('heart_rate_measurement');
+        await heartRateCharacteristic.startNotifications();
+        bluetoothStatusElem.textContent = '¡Conectado! Escuchando latidos...';
+        bluetoothStatusElem.classList.add('text-green-600');
+        requestWakeLock();
+        heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
+      } catch (error) {
+        bluetoothStatusElem.textContent = `Error: ${error.message}`;
+        bluetoothStatusElem.classList.add('text-red-600');
+        connectBluetoothBtn.disabled = false;
+      }
+    });
+
+    function handleHeartRateNotification(event) {
+      const value = event.target.value;
+      const heartRate = parseHeartRate(value);
+      heartRateDisplayElem.textContent = heartRate;
+      updateFullScreenHeartRate(heartRate);
+      if (heartRate > 0) {
+        const animationDuration = 60 / heartRate;
+        heartIconElem.style.animationDuration = `${animationDuration.toFixed(2)}s`;
+        heartIconElem.classList.add('heartbeat-animation');
+      } else {
+        heartIconElem.classList.remove('heartbeat-animation');
+      }
+    }
+
+    function parseHeartRate(value) {
+      const flags = value.getUint8(0);
+      const rate16Bits = (flags & 0x1) !== 0;
+      if (rate16Bits) {
+        return value.getUint16(1, true);
+      } else {
+        return value.getUint8(1);
+      }
+    }
+
+    function onDisconnected() {
+      bluetoothStatusElem.textContent = 'Dispositivo desconectado.';
+      bluetoothStatusElem.classList.remove('text-green-600');
+      bluetoothStatusElem.classList.add('text-red-600');
+      heartRateDisplayElem.textContent = '--';
+      if (heartRateCharacteristic) {
+        heartRateCharacteristic.removeEventListener('characteristicvaluechanged', handleHeartRateNotification);
+        heartRateCharacteristic = null;
+      }
+      updateFullScreenHeartRate('--');
+    }
+
+    // --- Pantalla Completa ---
+    function enterFullScreen() {
+      fullscreenContainer.classList.remove('hidden');
+      if (document.documentElement.requestFullscreen) {
+        fullscreenContainer.requestFullscreen();
+      }
+      setTimeout(fitHeartRateFontSize, 200);
+    }
+    function exitFullScreen() {
+      fullscreenContainer.classList.add('hidden');
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    }
+    fullscreenBtn.addEventListener('click', enterFullScreen);
+    exitFullscreenBtn.addEventListener('click', exitFullScreen);
+
+    // Truco: ajustar SOLO la fuente del "prototipo"
+    function fitHeartRateFontSize() {
+      const proto = fullscreenHeartRateProto;
+      if (!proto) return;
+      let boxW, boxH;
+      if (window.matchMedia("(orientation: landscape)").matches) {
+        boxW = window.innerWidth * 0.53;
+        boxH = window.innerHeight * 0.93;
+      } else {
+        boxW = window.innerWidth * 0.95;
+        boxH = window.innerHeight * 0.33;
+      }
+      proto.style.fontSize = '200px';
+      const rect = proto.getBoundingClientRect();
+      const scaleW = boxW / rect.width;
+      const scaleH = boxH / rect.height;
+      const scale = Math.min(scaleW, scaleH, 1.17);
+      const newFontSize = 200 * scale;
+      proto.style.fontSize = newFontSize + 'px';
+      // La visible SIEMPRE hereda el tamaño del prototipo
+      fullscreenHeartRateVisible.style.fontSize = window.getComputedStyle(proto).fontSize;
+    }
+    function updateFullScreenHeartRate(bpm) {
+      fullscreenHeartRateVisible.textContent = bpm;
+      if (!fullscreenContainer.classList.contains('hidden')) {
+        fitHeartRateFontSize();
+      }
+    }
+    window.addEventListener('resize', () => {
+      if (!fullscreenContainer.classList.contains('hidden')) {
+        fitHeartRateFontSize();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        fullscreenContainer.classList.add('hidden');
+      } else {
+        setTimeout(fitHeartRateFontSize, 100);
+      }
+    });
+
+    updateFullScreenHeartRate('--');
+  </script>
 </body>
 </html>
-
