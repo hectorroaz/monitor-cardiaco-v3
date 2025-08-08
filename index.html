@@ -7,8 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Estilos originales sin cambios */
-  </style>
     :root { --c-z1: #2563eb; --c-z2: #059669; --c-z3: #fbbf24; --c-z4: #fb923c; }
     body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
     button { transition: background-color 0.3s, transform 0.1s; }
@@ -27,6 +25,10 @@
     .circle-btn svg { width: 1.8rem; height: 1.8rem; }
     .btn-play { background: #16a34a; } .btn-pause { background: #dc2626; } .btn-reset { background: #6b7280; }
     .btn-play:hover { background: #15803d; } .btn-pause:hover { background: #991b1b; } .btn-reset:hover { background: #334155; }
+    /* v3.8: estado de confirmación del botón Reset */
+    .circle-btn.btn-reset.confirming { background: #dc2626 !important; }
+    .circle-btn.btn-reset.confirming:hover { background: #991b1b !important; }
+
     .fullscreen-flex-vertical { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
     .hr-container { width: 100vw; display: flex; justify-content: center; align-items: center; position: relative; }
     .controls-container { width: 100vw; display: flex; flex-direction: column; align-items: center; }
@@ -62,7 +64,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.7.1</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.8</div>
       <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -94,6 +96,7 @@
           <button id="sessionToggleBtn" class="circle-btn btn-play" title="Iniciar" aria-label="Iniciar sesión" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
           </button>
+          <!-- Reset con confirmación (v3.8) -->
           <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar" aria-label="Reiniciar Sesión">
             <svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2" fill="none"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="6"/></svg>
           </button>
@@ -250,7 +253,6 @@
       if (!('vibrate' in navigator)) return;
       if (document.visibilityState !== 'visible') return;
       const didVibrate = navigator.vibrate(pattern);
-      console.log('Vibrate result:', didVibrate);
       if (!didVibrate && ui.toggleBtn) {
         ui.toggleBtn.style.transform = 'scale(0.9)';
         setTimeout(() => { ui.toggleBtn.style.transform = ''; }, 120);
@@ -305,6 +307,37 @@
       maxHRInSession = 0;
       hrSum = 0;
       updateSessionTime();
+    }
+
+    // v3.8: Reset con confirmación (doble toque en 3s)
+    let resetConfirming = false;
+    let resetConfirmTimeout = null;
+
+    function onResetClick_v38() {
+      if (!resetConfirming) {
+        // Primer toque: entrar en estado de confirmación
+        resetConfirming = true;
+        ui.resetBtn.classList.add('confirming');
+        ui.resetBtn.setAttribute('title', 'Toca de nuevo para REINICIAR (3s)');
+        ui.resetBtn.setAttribute('aria-label', 'Confirmar reinicio (toca de nuevo)');
+        clearTimeout(resetConfirmTimeout);
+        resetConfirmTimeout = setTimeout(cancelResetConfirm_v38, 3000);
+      } else {
+        // Segundo toque: ejecutar reset
+        clearTimeout(resetConfirmTimeout);
+        resetConfirming = false;
+        ui.resetBtn.classList.remove('confirming');
+        ui.resetBtn.setAttribute('title', 'Reiniciar');
+        ui.resetBtn.setAttribute('aria-label', 'Reiniciar Sesión');
+        resetSession();
+      }
+    }
+
+    function cancelResetConfirm_v38() {
+      resetConfirming = false;
+      ui.resetBtn.classList.remove('confirming');
+      ui.resetBtn.setAttribute('title', 'Reiniciar');
+      ui.resetBtn.setAttribute('aria-label', 'Reiniciar Sesión');
     }
 
     function updateSessionTime() {
@@ -449,7 +482,7 @@
 
       ui.connectBtn.addEventListener('click', connectToBluetooth);
       ui.toggleBtn.addEventListener('click', toggleSession);
-      ui.resetBtn.addEventListener('click', resetSession);
+      ui.resetBtn.addEventListener('click', onResetClick_v38);
       ui.fullscreenBtn.addEventListener('click', enterFullScreen);
       ui.exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
@@ -482,43 +515,6 @@
       // Estado inicial del botón toggle
       reflectToggleUI();
     });
-   <!-- Botón de Reset con confirmación -->
-  <button id="resetBtn" class="px-4 py-2 bg-yellow-600 text-white rounded">Reiniciar</button>
-
-  <script>
-    let resetConfirmTimeout = null;
-    let resetConfirming = false;
-
-    const resetBtn = document.getElementById('resetBtn');
-
-    resetBtn.addEventListener('click', () => {
-      if (!resetConfirming) {
-        resetConfirming = true;
-        resetBtn.textContent = 'Confirmar reinicio';
-        resetBtn.classList.remove('bg-yellow-600');
-        resetBtn.classList.add('bg-red-600');
-
-        resetConfirmTimeout = setTimeout(() => {
-          resetConfirming = false;
-          resetBtn.textContent = 'Reiniciar';
-          resetBtn.classList.remove('bg-red-600');
-          resetBtn.classList.add('bg-yellow-600');
-        }, 3000);
-      } else {
-        clearTimeout(resetConfirmTimeout);
-        resetConfirming = false;
-        resetBtn.textContent = 'Reiniciar';
-        resetBtn.classList.remove('bg-red-600');
-        resetBtn.classList.add('bg-yellow-600');
-        resetSession(); // Lógica original de reinicio de sesión
-      }
-    });
-
-    function resetSession() {
-      // Aquí va la lógica original para reiniciar el contador de tiempo y cualquier otro dato
-      console.log('Sesión reiniciada');
-    }
   </script>
 </body>
 </html>
-
