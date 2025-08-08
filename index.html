@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Frecuencia Cardíaca BLE v3.9 (Mod)</title>
+  <title>Monitor de Frecuencia Cardíaca BLE v4.0 (Mod)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -68,7 +68,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.9</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 4.0</div>
       <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -79,9 +79,10 @@
       <div class="text-lg text-gray-400">BPM</div>
       <p id="bluetoothStatus" class="mt-4 text-sm text-gray-400 h-5" role="status">Estado: Desconectado</p>
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-3 gap-4">
       <button id="fullscreenBtn" class="btn-main bg-white text-black hover:bg-gray-100">Pantalla Completa</button>
       <button id="editZonesBtn" class="btn-main bg-gray-700 text-white hover:bg-gray-600">Editar Zonas</button>
+      <button id="disconnectBluetooth" class="btn-main bg-gray-800 text-white hover:bg-gray-700 disabled:bg-gray-600" disabled>Desconectar</button>
     </div>
     <div>
       <button id="connectBluetooth" class="btn-main bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400">Conectar a Sensor</button>
@@ -110,6 +111,10 @@
           <!-- Reset con confirmación -->
           <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar" aria-label="Reiniciar Sesión">
             <svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2" fill="none"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="6"/></svg>
+          </button>
+          <!-- v4.0: Exportar CSV -->
+          <button id="exportCsvBtn" class="circle-btn bg-sky-700 hover:bg-sky-600" title="Exportar CSV" aria-label="Exportar datos de sesión a CSV">
+            <svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M5 20h14a1 1 0 0 0 1-1v-7h-2v6H6v-6H4v7a1 1 0 0 0 1 1zm7-3l5-5h-3V4h-4v8H7l5 5z"/></svg>
           </button>
         </div>
         <button id="exitFullscreenBtn" class="mt-2 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
@@ -145,6 +150,8 @@
     let lastHR = null, zoneActual = 1;
     let sessionInterval = null, sessionStart = null, sessionElapsed = 0, sessionRunning = false, secondsInZone = 0;
     let hrHistory = [], maxHRInSession = 0, hrSum = 0;
+    // v4.0: muestras con timestamp para exportar
+    let hrSamples = []; // {t: epoch_ms, hr: number}
 
     let ZONAS = [
       { id: 1, nombre: "Zona 1", rango: "94–113 bpm", min: 94, max: 113, label: "Z1" },
@@ -161,6 +168,7 @@
     // --- Cacheo de Elementos del DOM
     const ui = {
       connectBtn: document.getElementById('connectBluetooth'),
+      disconnectBtn: document.getElementById('disconnectBluetooth'),
       statusElem: document.getElementById('bluetoothStatus'),
       hrDisplay: document.getElementById('heartRateDisplay'),
       heartIcon: document.getElementById('heartIcon'),
@@ -171,6 +179,7 @@
       sessionTime: document.getElementById('sessionTime'),
       toggleBtn: document.getElementById('sessionToggleBtn'),
       resetBtn: document.getElementById('resetSessionBtn'),
+      exportCsvBtn: document.getElementById('exportCsvBtn'),
       hrProto: document.getElementById('fullscreenHeartRateProto'),
       hrVisible: document.getElementById('fullscreenHeartRateVisible'),
       arrow: document.getElementById('indicadorFlecha'),
@@ -323,6 +332,7 @@
       sessionElapsed = 0;
       secondsInZone = 0;
       hrHistory = [];
+      hrSamples = [];
       maxHRInSession = 0;
       hrSum = 0;
       updateSessionTime();
@@ -366,7 +376,6 @@
     // v3.9: Ajuste de tiempo (sumar/restar mientras corre o pausado)
     function adjustSessionTime(deltaMs) {
       if (sessionRunning) {
-        // Para sumar tiempo ya transcurrido, retrocedemos el inicio
         sessionStart -= deltaMs;
       } else {
         sessionElapsed = Math.max(0, sessionElapsed + deltaMs);
@@ -388,7 +397,7 @@
 
     // v3.9: Gestos táctiles (tap para toggle, swipe vertical para cambiar zona)
     let touchStartY = 0, touchStartX = 0, swiping = false;
-    const SWIPE_THRESHOLD = 60; // píxeles
+    const SWIPE_THRESHOLD = 60;
 
     function onTouchStart(e) {
       const t = e.touches ? e.touches[0] : e;
@@ -396,10 +405,7 @@
       touchStartX = t.clientX;
       swiping = true;
     }
-    function onTouchMove(e) {
-      if (!swiping) return;
-      // podemos prevenir scroll accidental si quieres
-    }
+    function onTouchMove(e) { if (!swiping) return; }
     function onTouchEnd(e) {
       if (!swiping) return;
       swiping = false;
@@ -407,20 +413,39 @@
       const dy = t.clientY - touchStartY;
       const dx = Math.abs(t.clientX - touchStartX);
       if (Math.abs(dy) > SWIPE_THRESHOLD && dx < 40) {
-        if (dy < 0) { // swipe up → subir zona
-          zoneActual = Math.min(ZONAS.length, zoneActual + 1);
-        } else { // swipe down → bajar zona
-          zoneActual = Math.max(1, zoneActual - 1);
-        }
+        if (dy < 0) { zoneActual = Math.min(ZONAS.length, zoneActual + 1); }
+        else { zoneActual = Math.max(1, zoneActual - 1); }
         updateZoneVisuals();
         updateFullScreenHeartRate(lastHR ?? '--');
         showSnack('Zona: ' + (ZONAS.find(z=>z.id===zoneActual)?.label || zoneActual));
         tryVibrate(15);
       } else {
-        // Tap: alternar play/pause
         toggleSession();
       }
     }
+
+    // v4.0: Exportar CSV
+    function exportCsv() {
+      const header = 'elapsed_ms,time_iso,bpm\n';
+      const base = (sessionStart && sessionRunning) ? sessionStart : (Date.now() - sessionElapsed);
+      const rows = hrSamples.map(s => {
+        const elapsed = s.t - base;
+        return `${elapsed},${new Date(s.t).toISOString()},${s.hr}`;
+      }).join('\n');
+      const csv = header + rows;
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const filename = `hr_session_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+      showSnack('CSV exportado');
+    }
+
+    // v4.0: Auto-reconexión BLE + desconexión manual
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT = 5;
 
     async function connectToBluetooth() {
       if (!navigator.bluetooth) {
@@ -432,22 +457,28 @@
         ui.statusElem.textContent = 'Buscando sensor...';
         ui.connectBtn.disabled = true;
         bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }], optionalServices: ['device_information'] });
-        ui.statusElem.textContent = `Conectando a ${bleDevice.name || 'dispositivo'}...`;
-        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-        const server = await bleDevice.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        heartRateCharacteristic = await service.getCharacteristic('heart_rate_measurement');
-        await heartRateCharacteristic.startNotifications();
-        ui.statusElem.textContent = '¡Conectado! Escuchando latidos...';
-        ui.statusElem.classList.add('text-green-600');
-        ui.connectBtn.disabled = false;
-        if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(lock => wakeLock = lock);
-        heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
+        await establishGattConnection(bleDevice);
       } catch (error) {
         ui.statusElem.textContent = `Error: ${error.message}`;
         ui.statusElem.classList.add('text-red-600');
         ui.connectBtn.disabled = false;
       }
+    }
+
+    async function establishGattConnection(device) {
+      ui.statusElem.textContent = `Conectando a ${device.name || 'dispositivo'}...`;
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('heart_rate');
+      heartRateCharacteristic = await service.getCharacteristic('heart_rate_measurement');
+      await heartRateCharacteristic.startNotifications();
+      heartRateCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
+      ui.statusElem.textContent = '¡Conectado! Escuchando latidos...';
+      ui.statusElem.classList.add('text-green-600');
+      ui.connectBtn.disabled = false;
+      ui.disconnectBtn.disabled = false;
+      reconnectAttempts = 0;
+      if ('wakeLock' in navigator) { try { navigator.wakeLock.request('screen').then(lock => wakeLock = lock); } catch(e){} }
     }
 
     function handleHeartRateNotification(event) {
@@ -458,6 +489,7 @@
       ui.hrDisplay.textContent = heartRate;
       if (sessionRunning && heartRate > 0) {
         hrHistory.push(heartRate);
+        hrSamples.push({ t: Date.now(), hr: heartRate });
         hrSum += heartRate;
         if (heartRate > maxHRInSession) { maxHRInSession = heartRate; }
       }
@@ -471,18 +503,47 @@
       }
     }
 
+    async function tryReconnect() {
+      if (!bleDevice || reconnectAttempts >= MAX_RECONNECT) return;
+      const delay = Math.min(16000, 1000 * Math.pow(2, reconnectAttempts));
+      reconnectAttempts++;
+      ui.statusElem.textContent = `Reconectando (intento ${reconnectAttempts}/${MAX_RECONNECT})...`;
+      await new Promise(r => setTimeout(r, delay));
+      try {
+        if (bleDevice.gatt.connected) return;
+        await establishGattConnection(bleDevice);
+        showSnack('Reconectado');
+      } catch (e) {
+        if (reconnectAttempts < MAX_RECONNECT) tryReconnect();
+        else ui.statusElem.textContent = 'No se pudo reconectar.';
+      }
+    }
+
     function onDisconnected() {
       ui.statusElem.textContent = 'Dispositivo desconectado.';
       ui.statusElem.classList.remove('text-green-600');
       ui.statusElem.classList.add('text-red-600');
       ui.hrDisplay.textContent = '--';
+      ui.disconnectBtn.disabled = true;
       if (heartRateCharacteristic) {
         heartRateCharacteristic.removeEventListener('characteristicvaluechanged', handleHeartRateNotification);
         heartRateCharacteristic = null;
       }
       updateFullScreenHeartRate('--');
       lastHR = null;
+      tryReconnect();
     }
+
+    function manualDisconnect() {
+      try { if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect(); } catch (e) {}
+    }
+
+    // v4.0: Re-adquirir Wake Lock al volver a la app
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && 'wakeLock' in navigator) {
+        try { navigator.wakeLock.request('screen').then(lock => wakeLock = lock); } catch(e){}
+      }
+    });
 
     function isInZone(hr) { if (isNaN(hr)) return false; const z = ZONAS.find(x => x.id == zoneActual); return z && hr >= z.min && hr <= z.max; }
 
@@ -550,13 +611,15 @@
     function exitFullScreen() { if (document.fullscreenElement) document.exitFullscreen(); handleExitFullscreen(); }
 
     // --- Inicialización y Event Listeners ---
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       loadCustomZones();
       updateZoneVisuals();
       updateFullScreenHeartRate('--');
       ui.sessionTime.textContent = "00:00:00";
 
       ui.connectBtn.addEventListener('click', connectToBluetooth);
+      ui.disconnectBtn.addEventListener('click', manualDisconnect);
+      ui.exportCsvBtn.addEventListener('click', exportCsv);
       ui.toggleBtn.addEventListener('click', toggleSession);
       ui.resetBtn.addEventListener('click', onResetClick_v38);
       ui.fullscreenBtn.addEventListener('click', enterFullScreen);
@@ -569,9 +632,7 @@
       ui.add1mBtn.addEventListener('click', () => adjustSessionTime(60 * 1000));
 
       // Tecla SPACE para alternar play/pause (si hay teclado BT)
-      document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') { e.preventDefault(); toggleSession(); }
-      });
+      document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleSession(); } });
 
       ui.editZonesBtn.addEventListener('click', openZoneEditor);
       ui.closeModalBtn.addEventListener('click', closeZoneEditor);
@@ -586,20 +647,26 @@
         updateFullScreenHeartRate(lastHR ?? '--');
       });
 
-      window.addEventListener('resize', () => {
-        if (ui.fullscreenContainer.classList.contains('active')) fitHeartRateFontSize();
-      });
-
-      document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement && ui.fullscreenContainer.classList.contains('active')) { handleExitFullscreen(); }
-      });
+      window.addEventListener('resize', () => { if (ui.fullscreenContainer.classList.contains('active')) fitHeartRateFontSize(); });
+      document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && ui.fullscreenContainer.classList.contains('active')) { handleExitFullscreen(); } });
 
       // v3.9: Gestos táctiles sobre el área de HR
       ui.hrTouchArea.addEventListener('touchstart', onTouchStart, {passive: true});
       ui.hrTouchArea.addEventListener('touchmove', onTouchMove, {passive: true});
       ui.hrTouchArea.addEventListener('touchend', onTouchEnd);
 
-      // Estado inicial del botón toggle
+      // Intento de reconexión a dispositivos permitidos previamente (cuando el navegador lo soporte)
+      if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+        try {
+          const devices = await navigator.bluetooth.getDevices();
+          const candidate = devices.find(d => d.gatt && !d.gatt.connected);
+          if (candidate) {
+            bleDevice = candidate;
+            showSnack('Dispositivo recordado disponible');
+          }
+        } catch (e) { /* noop */ }
+      }
+
       reflectToggleUI();
     });
   </script>
