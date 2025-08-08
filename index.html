@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Frecuencia Cardíaca BLE v3.8 (Mod)</title>
+  <title>Monitor de Frecuencia Cardíaca BLE v3.9 (Mod)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -57,6 +57,10 @@
     .modal-content h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
     .modal-input { background: #333; border: 1px solid #555; color: #fff; border-radius: 0.5em; padding: 0.5em 0.8em; width: 100%; }
     .modal-input:focus { outline: none; border-color: var(--c-z1); }
+
+    /* v3.9: Snackbar (toast) */
+    .snackbar { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #111827; color: #e5e7eb; padding: 10px 14px; border-radius: 12px; border: 1px solid #374151; box-shadow: 0 6px 22px rgba(0,0,0,.35); font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 80; }
+    .snackbar.show { opacity: 1; }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -64,7 +68,7 @@
   <div class="w-full max-w-md bg-black rounded-2xl shadow-lg p-8 space-y-6 text-center relative z-10">
     <header>
       <h1 class="text-3xl font-bold text-white">Monitor de Ritmo Cardíaco</h1>
-      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.8</div>
+      <div class="text-gray-400 mt-1 mb-4 text-sm">v 3.9</div>
       <p class="text-gray-400 mt-2 mb-2">Conéctate a tu banda de frecuencia cardíaca BLE.</p>
     </header>
     <div class="border border-gray-700 rounded-lg p-6 bg-gray-900">
@@ -91,23 +95,31 @@
         <div class="zone-btns-row" id="zoneBtnsRow"></div>
         <span id="zoneDesc" class="zone-desc"></span>
         <time id="sessionTime" class="timer-box">00:00:00</time>
+        <!-- v3.9: Controles de ajuste de tiempo -->
+        <div class="controls-row mb-3">
+          <button class="circle-btn bg-gray-700 hover:bg-gray-600" id="addMinus10sBtn" title="Restar 10s" aria-label="Restar 10 segundos"><span class="font-bold">−10s</span></button>
+          <button class="circle-btn bg-gray-700 hover:bg-gray-600" id="add10sBtn" title="Sumar 10s" aria-label="Sumar 10 segundos"><span class="font-bold">+10s</span></button>
+          <button class="circle-btn bg-gray-700 hover:bg-gray-600" id="add30sBtn" title="Sumar 30s" aria-label="Sumar 30 segundos"><span class="font-bold">+30s</span></button>
+          <button class="circle-btn bg-gray-700 hover:bg-gray-600" id="add1mBtn" title="Sumar 1 minuto" aria-label="Sumar un minuto"><span class="font-bold">+1m</span></button>
+        </div>
         <div class="controls-row mt-2 mb-8">
-          <!-- Toggle Play/Pause (v3.7) -->
+          <!-- Toggle Play/Pause -->
           <button id="sessionToggleBtn" class="circle-btn btn-play" title="Iniciar" aria-label="Iniciar sesión" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
           </button>
-          <!-- Reset con confirmación (v3.8) -->
+          <!-- Reset con confirmación -->
           <button id="resetSessionBtn" class="circle-btn btn-reset" title="Reiniciar" aria-label="Reiniciar Sesión">
             <svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2" fill="none"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="6"/></svg>
           </button>
         </div>
-        <button id="exitFullscreenBtn" class="mt-8 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
+        <button id="exitFullscreenBtn" class="mt-2 bg-gray-800 text-white px-10 py-5 rounded-xl text-2xl hover:bg-gray-900">Salir</button>
       </div>
-      <div class="hr-container">
+      <div class="hr-container" id="hrTouchArea">
         <span id="fullscreenHeartRateProto" class="hr-size-proto" aria-hidden="true">188</span>
         <span id="fullscreenHeartRateVisible">--</span>
         <span id="indicadorFlecha" class="indicador-flecha"></span>
       </div>
+      <div id="snackbar" class="snackbar" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -171,6 +183,13 @@
       calculateZonesBtn: document.getElementById('calculateZonesBtn'),
       userAgeInput: document.getElementById('userAge'),
       zoneInputsContainer: document.getElementById('zoneInputsContainer'),
+      // v3.9
+      addMinus10sBtn: document.getElementById('addMinus10sBtn'),
+      add10sBtn: document.getElementById('add10sBtn'),
+      add30sBtn: document.getElementById('add30sBtn'),
+      add1mBtn: document.getElementById('add1mBtn'),
+      snackbar: document.getElementById('snackbar'),
+      hrTouchArea: document.getElementById('hrTouchArea'),
     };
 
     // ---- Lógica de la aplicación ----
@@ -315,7 +334,6 @@
 
     function onResetClick_v38() {
       if (!resetConfirming) {
-        // Primer toque: entrar en estado de confirmación
         resetConfirming = true;
         ui.resetBtn.classList.add('confirming');
         ui.resetBtn.setAttribute('title', 'Toca de nuevo para REINICIAR (3s)');
@@ -323,7 +341,6 @@
         clearTimeout(resetConfirmTimeout);
         resetConfirmTimeout = setTimeout(cancelResetConfirm_v38, 3000);
       } else {
-        // Segundo toque: ejecutar reset
         clearTimeout(resetConfirmTimeout);
         resetConfirming = false;
         ui.resetBtn.classList.remove('confirming');
@@ -344,6 +361,65 @@
       const currentElapsed = sessionRunning ? Date.now() - sessionStart : sessionElapsed;
       ui.sessionTime.textContent = formatDuration(currentElapsed);
       if (sessionRunning && lastHR && isInZone(lastHR)) { secondsInZone++; }
+    }
+
+    // v3.9: Ajuste de tiempo (sumar/restar mientras corre o pausado)
+    function adjustSessionTime(deltaMs) {
+      if (sessionRunning) {
+        // Para sumar tiempo ya transcurrido, retrocedemos el inicio
+        sessionStart -= deltaMs;
+      } else {
+        sessionElapsed = Math.max(0, sessionElapsed + deltaMs);
+      }
+      updateSessionTime();
+      showSnack((deltaMs >= 0 ? '+' : '−') + formatDuration(Math.abs(deltaMs)) + ' aplicado');
+      tryVibrate(20);
+    }
+
+    // v3.9: Snackbar simple
+    let snackTimer = null;
+    function showSnack(text) {
+      if (!ui.snackbar) return;
+      ui.snackbar.textContent = text;
+      ui.snackbar.classList.add('show');
+      clearTimeout(snackTimer);
+      snackTimer = setTimeout(() => ui.snackbar.classList.remove('show'), 1000);
+    }
+
+    // v3.9: Gestos táctiles (tap para toggle, swipe vertical para cambiar zona)
+    let touchStartY = 0, touchStartX = 0, swiping = false;
+    const SWIPE_THRESHOLD = 60; // píxeles
+
+    function onTouchStart(e) {
+      const t = e.touches ? e.touches[0] : e;
+      touchStartY = t.clientY;
+      touchStartX = t.clientX;
+      swiping = true;
+    }
+    function onTouchMove(e) {
+      if (!swiping) return;
+      // podemos prevenir scroll accidental si quieres
+    }
+    function onTouchEnd(e) {
+      if (!swiping) return;
+      swiping = false;
+      const t = e.changedTouches ? e.changedTouches[0] : e;
+      const dy = t.clientY - touchStartY;
+      const dx = Math.abs(t.clientX - touchStartX);
+      if (Math.abs(dy) > SWIPE_THRESHOLD && dx < 40) {
+        if (dy < 0) { // swipe up → subir zona
+          zoneActual = Math.min(ZONAS.length, zoneActual + 1);
+        } else { // swipe down → bajar zona
+          zoneActual = Math.max(1, zoneActual - 1);
+        }
+        updateZoneVisuals();
+        updateFullScreenHeartRate(lastHR ?? '--');
+        showSnack('Zona: ' + (ZONAS.find(z=>z.id===zoneActual)?.label || zoneActual));
+        tryVibrate(15);
+      } else {
+        // Tap: alternar play/pause
+        toggleSession();
+      }
     }
 
     async function connectToBluetooth() {
@@ -486,6 +562,12 @@
       ui.fullscreenBtn.addEventListener('click', enterFullScreen);
       ui.exitFullscreenBtn.addEventListener('click', exitFullScreen);
 
+      // v3.9: botones de ajuste de tiempo
+      ui.addMinus10sBtn.addEventListener('click', () => adjustSessionTime(-10 * 1000));
+      ui.add10sBtn.addEventListener('click', () => adjustSessionTime(10 * 1000));
+      ui.add30sBtn.addEventListener('click', () => adjustSessionTime(30 * 1000));
+      ui.add1mBtn.addEventListener('click', () => adjustSessionTime(60 * 1000));
+
       // Tecla SPACE para alternar play/pause (si hay teclado BT)
       document.addEventListener('keydown', (e) => {
         if (e.code === 'Space') { e.preventDefault(); toggleSession(); }
@@ -511,6 +593,11 @@
       document.addEventListener('fullscreenchange', () => {
         if (!document.fullscreenElement && ui.fullscreenContainer.classList.contains('active')) { handleExitFullscreen(); }
       });
+
+      // v3.9: Gestos táctiles sobre el área de HR
+      ui.hrTouchArea.addEventListener('touchstart', onTouchStart, {passive: true});
+      ui.hrTouchArea.addEventListener('touchmove', onTouchMove, {passive: true});
+      ui.hrTouchArea.addEventListener('touchend', onTouchEnd);
 
       // Estado inicial del botón toggle
       reflectToggleUI();
